@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>三国志探险</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 首页 -->
+    <section id="screen-home" class="screen active">
+      <!-- 英雄区：大图轮播 -->
+      <div class="home-hero">
+        <div class="home-hero-bg">
+          <img src="images/home_banner.webp" alt="" class="hero-img active" data-index="0">
+          <img src="images/scenes/chibi2.webp" alt="" class="hero-img" data-index="1">
+          <img src="images/scenes/changbanpo.webp" alt="" class="hero-img" data-index="2">
+          <img src="images/scenes/guandu2.webp" alt="" class="hero-img" data-index="3">
+          <img src="images/scenes/longzhong.webp" alt="" class="hero-img" data-index="4">
+          <img src="images/scenes/taoyuan.webp" alt="" class="hero-img" data-index="5">
+        </div>
+        <div class="home-hero-overlay"></div>
+        <div class="home-hero-content">
+          <h1 class="game-title float">三国志探险</h1>
+          <p class="game-subtitle">穿越千年，探索三国</p>
+        <div id="auth-status" style="position:absolute;top:12px;right:12px;z-index:5"></div>
+          <div class="hero-dots" id="hero-dots">
+            <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 统计条 -->
+      <div class="home-stats-bar">
+        <div class="stat-pill" title="金币（大富翁获得，升级武将）">
+          <span class="stat-pill-icon">💰</span>
+          <span class="stat-pill-value" id="home-gold">0</span>
+        </div>
+        <div class="stat-pill" title="答题积分（对战获得）">
+          <span class="stat-pill-icon">🎫</span>
+          <span class="stat-pill-value" id="home-quiz-coins">0</span>
+        </div>
+        <div class="stat-pill" title="抽卡积分（答题获得）">
+          <span class="stat-pill-icon">💎</span>
+          <span class="stat-pill-value" id="home-gacha-coins">0</span>
+        </div>
+        <div class="stat-pill" title="已收集武将">
+          <span class="stat-pill-icon">🃏</span>
+          <span class="stat-pill-value" id="home-cards">0/36</span>
+        </div>
+      </div>
+
+      <!-- 功能入口：大卡片按钮 -->
+      <!-- 游戏循环指引 -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 12px;font-size:11px">
+        <span style="background:#4caf5020;padding:2px 8px;border-radius:8px;font-weight:600">⚔️关卡</span>
+        <span style="color:#ccc">→</span>
+        <span style="background:#667eea20;padding:2px 8px;border-radius:8px;font-weight:600">📝答题</span>
+        <span style="color:#ccc">→</span>
+        <span style="background:#f5a62320;padding:2px 8px;border-radius:8px;font-weight:600">✨抽卡</span>
+        <span style="color:#ccc">→</span>
+        <span style="background:#ef535020;padding:2px 8px;border-radius:8px;font-weight:600">💪变强</span>
+        <span style="color:#ccc">↩</span>
+      </div>
+
+      <!-- 功能入口：4列2行 -->
+      <div class="home-entries">
+        <button class="entry-card" onclick="window.app.navigate('map')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_map.webp')"></div>
+          <div class="entry-info"><span class="entry-icon">⚔️</span><span class="entry-title">关卡</span></div>
+        </button>
+        <button class="entry-card" onclick="window.app.navigate('quiz')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_quiz.webp')"></div>
+          <div class="entry-info"><span class="entry-icon">📝</span><span class="entry-title">答题</span></div>
+        </button>
+        <button class="entry-card" onclick="window.app.navigate('gacha')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_gacha.webp')"></div>
+          <div class="entry-info"><span class="entry-icon">✨</span><span class="entry-title">抽卡</span></div>
+        </button>
+        <button class="entry-card" onclick="window.app.navigate('cards')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_cards.webp')"></div>
+          <div class="entry-info"><span class="entry-icon">📖</span><span class="entry-title">图鉴</span></div>
+        </button>
+        <button class="entry-card" onclick="window.app.navigate('dungeon')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_dungeon.webp')"></div>
+          <div class="entry-info"><span class="entry-icon">🗺️</span><span class="entry-title">探险</span></div>
+        </button>
+        <button class="entry-card" onclick="window.app.navigate('monopoly')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_monopoly.webp')"></div>
+          <div class="entry-info"><span class="entry-icon">🎲</span><span class="entry-title">大富翁</span></div>
+        </button>
+        <button class="entry-card" onclick="window.app.navigate('rank')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_rank.webp')"></div>
+          <div class="entry-info"><span class="entry-icon">🏆</span><span class="entry-title">擂台</span></div>
+        </button>
+        <button class="entry-card" onclick="window.app.navigate('achievements')">
+          <div class="entry-bg" style="background-image:url('images/entries/entry_achievements.webp')"></div>
+          <div class="entry-info">
+            <span class="entry-icon">🏅</span>
+            <span class="entry-title">成就</span>
+            <span id="home-ach-count" style="font-size:9px;opacity:0.85;margin-top:2px">0/50</span>
+          </div>
+        </button>
+      </div>
+    </section>
+
+    <!-- 地图 -->
+    <section id="screen-map" class="screen">
+      <div class="screen-header">
+        <h2>关卡对战</h2>
+        <div style="display:flex;gap:8px;font-size:12px;font-weight:700">
+          <span style="background:#fff3d4;padding:3px 8px;border-radius:8px;color:#f5a623">🎫 <span id="map-quiz-coins">0</span></span>
+          <span style="background:#e8eaf6;padding:3px 8px;border-radius:8px;color:#5c6bc0">💎 <span id="map-gacha-coins">0</span></span>
+        </div>
+      </div>
+      <div id="map-container"></div>
+    </section>
+
+    <!-- 问答 -->
+    <section id="screen-quiz" class="screen">
+      <div class="screen-header">
+        <button class="back-btn hidden" id="quiz-back-btn" onclick="window.quizModule.backToList()">← 返回</button>
+        <h2 id="quiz-title">答题闯关</h2>
+      </div>
+      <!-- 答题列表（默认显示） -->
+      <div id="quiz-list-view" class="quiz-list-view"></div>
+      <!-- 答题区（答题时显示） -->
+      <div id="quiz-play-view" class="quiz-play-view hidden">
+        <div id="quiz-intro" class="quiz-intro"></div>
+        <div id="quiz-question-area" class="hidden">
+          <div class="quiz-progress">
+            <span id="quiz-progress-text">第 1/5 题</span>
+            <div class="progress-bar"><div id="quiz-progress-bar" class="progress-fill"></div></div>
+          </div>
+          <div id="quiz-question" class="quiz-question"></div>
+          <div id="quiz-options" class="quiz-options"></div>
+          <div id="quiz-feedback" class="quiz-feedback hidden"></div>
+          <button id="quiz-next-btn" class="btn btn-primary hidden" onclick="window.quizModule.nextQuestion()">下一题</button>
+        </div>
+        <div id="quiz-result" class="quiz-result hidden"></div>
+      </div>
+    </section>
+
+    <!-- 抽卡 -->
+    <section id="screen-gacha" class="screen">
+      <div class="screen-header">
+        <h2>抽卡召唤</h2>
+        <div class="points-display">💎 <span id="gacha-points">0</span></div>
+      </div>
+      <div id="gacha-container">
+        <div class="gacha-banner">
+          <div class="gacha-banner-text">
+            <h3>武将召唤</h3>
+            <p>消耗积分，召唤三国武将！</p>
+          </div>
+        </div>
+        <div class="gacha-pity">
+          <span>距稀有保底: <strong id="gacha-pity-rare">10</strong>抽</span>
+          <span>距传说保底: <strong id="gacha-pity-legend">30</strong>抽</span>
+        </div>
+        <div class="gacha-buttons">
+          <button class="btn btn-gacha-single" id="gacha-single-btn" onclick="window.gachaModule.pull(1)">
+            <span class="gacha-cost">10积分</span>
+            <span>单抽</span>
+          </button>
+          <button class="btn btn-gacha-ten" id="gacha-ten-btn" onclick="window.gachaModule.pull(10)">
+            <span class="gacha-cost">90积分</span>
+            <span>十连抽</span>
+          </button>
+        </div>
+        <div id="gacha-result" class="gacha-result hidden"></div>
+      </div>
+    </section>
+
+    <!-- 探险 -->
+    <section id="screen-dungeon" class="screen">
+      <div class="screen-header">
+        <h2>⚔️ 乱世探险</h2>
+      </div>
+      <div id="dungeon-container" style="flex:1;overflow-y:auto"></div>
+    </section>
+
+    <!-- 排行榜/擂台 -->
+    <section id="screen-rank" class="screen">
+      <div class="screen-header">
+        <h2>🏆 排行·擂台</h2>
+      </div>
+      <div id="leaderboard-container" style="padding:12px;flex:1;overflow-y:auto"></div>
+    </section>
+
+    <!-- 大富翁 -->
+    <section id="screen-monopoly" class="screen">
+      <div class="screen-header">
+        <h2>🎲 三国大富翁</h2>
+      </div>
+      <div id="monopoly-container"></div>
+    </section>
+
+    <!-- 成就 -->
+    <section id="screen-achievements" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" onclick="window.app.navigate('home')">← 返回</button>
+        <h2>🏅 成就殿堂</h2>
+      </div>
+      <div id="achievements-container" style="flex:1;overflow-y:auto"></div>
+    </section>
+
+    <!-- 图鉴 -->
+    <section id="screen-cards" class="screen">
+      <div class="screen-header">
+        <h2>武将图鉴</h2>
+        <div class="cards-count"><span id="cards-collected">0</span>/36</div>
+      </div>
+      <div class="cards-filter">
+        <button class="filter-btn active" data-filter="all">全部</button>
+        <button class="filter-btn" data-filter="wei">魏</button>
+        <button class="filter-btn" data-filter="shu">蜀</button>
+        <button class="filter-btn" data-filter="wu">吴</button>
+        <button class="filter-btn" data-filter="qun">群雄</button>
+      </div>
+      <div id="cards-grid" class="cards-grid"></div>
+      <div id="card-detail" class="card-detail hidden">
+        <div class="card-detail-content">
+          <button class="panel-close" onclick="window.cardsModule.closeDetail()">&times;</button>
+          <div id="card-detail-inner"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 对战 -->
+    <section id="screen-battle" class="screen">
+      <div class="screen-header">
+        <h2>武将对战</h2>
+      </div>
+      <div id="battle-container">
+        <div id="battle-select" class="battle-select">
+          <h3>选择你的队伍（3名武将）</h3>
+          <div id="battle-my-team" class="battle-team-slots">
+            <div class="team-slot empty" data-slot="0">+</div>
+            <div class="team-slot empty" data-slot="1">+</div>
+            <div class="team-slot empty" data-slot="2">+</div>
+          </div>
+          <div id="battle-available" class="battle-available-cards"></div>
+          <button class="btn btn-primary" id="battle-start-btn" onclick="window.battleModule.startBattle()" disabled>开始对战</button>
+        </div>
+        <div id="battle-arena" class="battle-arena hidden">
+          <div class="battle-teams">
+            <div id="battle-left" class="battle-side"></div>
+            <div class="battle-vs">VS</div>
+            <div id="battle-right" class="battle-side"></div>
+          </div>
+          <div id="battle-log" class="battle-log"></div>
+          <div id="battle-result" class="battle-result hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部导航 -->
+    <nav class="tab-bar">
+      <button class="tab active" data-screen="home" onclick="window.app.navigate('home')">
+        <span class="tab-icon">🏠</span>
+        <span class="tab-label">首页</span>
+      </button>
+      <button class="tab" data-screen="map" onclick="window.app.navigate('map')">
+        <span class="tab-icon">⚔️</span>
+        <span class="tab-label">关卡</span>
+      </button>
+      <button class="tab" data-screen="monopoly" onclick="window.app.navigate('monopoly')">
+        <span class="tab-icon">🎲</span>
+        <span class="tab-label">大富翁</span>
+      </button>
+      <button class="tab" data-screen="dungeon" onclick="window.app.navigate('dungeon')">
+        <span class="tab-icon">🗺️</span>
+        <span class="tab-label">探险</span>
+      </button>
+      <button class="tab" data-screen="quiz" onclick="window.app.navigate('quiz')">
+        <span class="tab-icon">📝</span>
+        <span class="tab-label">答题</span>
+      </button>
+      <button class="tab" data-screen="gacha" onclick="window.app.navigate('gacha')">
+        <span class="tab-icon">✨</span>
+        <span class="tab-label">抽卡</span>
+      </button>
+      <button class="tab" data-screen="cards" onclick="window.app.navigate('cards')">
+        <span class="tab-icon">📖</span>
+        <span class="tab-label">图鉴</span>
+      </button>
+      <button class="tab" data-screen="rank" onclick="window.app.navigate('rank')">
+        <span class="tab-icon">🏆</span>
+        <span class="tab-label">擂台</span>
+      </button>
+      <button class="tab" data-screen="achievements" onclick="window.app.navigate('achievements')">
+        <span class="tab-icon">🏅</span>
+        <span class="tab-label">成就</span>
+      </button>
+    </nav>
+  </div>
+
+  <script type="module" src="js/app.js?v=34"></script>
+</body>
+</html>

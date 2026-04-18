@@ -1,0 +1,191 @@
+// 三国志探险 - 登录/注册/用户中心 UI
+
+import { getUser, isLoggedIn, register, login, logout, saveGameToCloud, loadGameFromCloud } from './supabase.js';
+import { gameState } from './state.js';
+
+export function initAuth() {
+  window.authModule = { showAuthUI, showUserMenu, syncToCloud, syncFromCloud };
+  updateAuthDisplay();
+  console.log('[auth] initAuth, isLoggedIn=', isLoggedIn());
+  // 页面加载时如果已登录，自动从云端恢复最新存档，再重新渲染当前页面
+  if (isLoggedIn()) {
+    syncFromCloud().then(() => {
+      console.log('[auth] 云端存档加载完成, cards=', Object.keys(gameState.ownedCards));
+      if (window.app) {
+        window.app.updateAllDisplays();
+        window.app.navigate(window.location.hash.slice(1).split('/')[0] || 'home');
+      }
+    }).catch((e) => { console.error('[auth] 云端加载失败', e); });
+  }
+}
+
+// ===== 更新顶部显示 =====
+function updateAuthDisplay() {
+  const el = document.getElementById('auth-status');
+  if (!el) return;
+
+  if (isLoggedIn()) {
+    const u = getUser();
+    el.innerHTML = `<span style="cursor:pointer;font-size:12px;background:var(--bg-card);padding:4px 10px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08)" onclick="window.authModule.showUserMenu()">👤 ${u.nickname}</span>`;
+  } else {
+    el.innerHTML = `<span style="cursor:pointer;font-size:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:4px 10px;border-radius:12px" onclick="window.authModule.showAuthUI()">登录</span>`;
+  }
+}
+
+// ===== 登录/注册弹窗 =====
+function showAuthUI() {
+  showPopup(`
+    <h3 style="margin-bottom:12px">🏯 三国志探险</h3>
+    <div id="auth-form">
+      <div id="auth-tabs" style="display:flex;gap:0;margin-bottom:14px">
+        <button id="tab-login" onclick="window._authTab('login')" style="flex:1;padding:8px;border:none;border-bottom:2px solid #667eea;background:none;font-weight:700;cursor:pointer;font-family:inherit">登录</button>
+        <button id="tab-reg" onclick="window._authTab('reg')" style="flex:1;padding:8px;border:none;border-bottom:2px solid #ddd;background:none;color:#999;cursor:pointer;font-family:inherit">注册</button>
+      </div>
+      <div id="auth-fields"></div>
+      <div id="auth-error" style="color:#ef5350;font-size:12px;min-height:18px;margin-top:6px"></div>
+    </div>
+  `);
+  window._authTab = showTab;
+  showTab('login');
+}
+
+function showTab(tab) {
+  const loginTab = document.getElementById('tab-login');
+  const regTab = document.getElementById('tab-reg');
+  const fields = document.getElementById('auth-fields');
+  if (!fields) return;
+
+  if (tab === 'login') {
+    loginTab.style.borderBottomColor = '#667eea'; loginTab.style.color = '#333';
+    regTab.style.borderBottomColor = '#ddd'; regTab.style.color = '#999';
+    fields.innerHTML = `
+      <input id="a-user" type="text" placeholder="用户名" style="${inputStyle}">
+      <input id="a-pass" type="password" placeholder="密码" style="${inputStyle}">
+      <button onclick="window._authSubmit('login')" style="${btnStyle}">登 录</button>`;
+  } else {
+    regTab.style.borderBottomColor = '#667eea'; regTab.style.color = '#333';
+    loginTab.style.borderBottomColor = '#ddd'; loginTab.style.color = '#999';
+    fields.innerHTML = `
+      <input id="a-user" type="text" placeholder="用户名（英文/数字）" style="${inputStyle}">
+      <input id="a-nick" type="text" placeholder="昵称（显示名）" style="${inputStyle}">
+      <input id="a-pass" type="password" placeholder="密码（至少6位）" style="${inputStyle}">
+      <button onclick="window._authSubmit('reg')" style="${btnStyle}">注 册</button>`;
+  }
+  document.getElementById('auth-error').textContent = '';
+  window._authSubmit = submitAuth;
+}
+
+const inputStyle = 'width:100%;padding:10px 12px;border:2px solid #e8e8e8;border-radius:10px;font-size:14px;margin-bottom:8px;box-sizing:border-box;font-family:inherit;outline:none';
+const btnStyle = 'width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;font-family:inherit';
+
+async function submitAuth(type) {
+  const errEl = document.getElementById('auth-error');
+  const username = document.getElementById('a-user')?.value?.trim();
+  const password = document.getElementById('a-pass')?.value;
+  const nickname = document.getElementById('a-nick')?.value?.trim();
+
+  if (!username || !password) { errEl.textContent = '请填写用户名和密码'; return; }
+  if (password.length < 6) { errEl.textContent = '密码至少6位'; return; }
+
+  errEl.textContent = '处理中...';
+  errEl.style.color = '#999';
+
+  let result;
+  if (type === 'login') {
+    result = await login(username, password);
+  } else {
+    if (username.length < 2) { errEl.textContent = '用户名至少2个字符'; errEl.style.color = '#ef5350'; return; }
+    result = await register(username, password, nickname || username);
+  }
+
+  if (result.ok) {
+    closePopup();
+    updateAuthDisplay();
+    // 登录后尝试从云端加载存档
+    await syncFromCloud();
+    if (window.app) window.app.updateAllDisplays();
+  } else {
+    errEl.textContent = result.error;
+    errEl.style.color = '#ef5350';
+  }
+}
+
+// ===== 用户菜单 =====
+function showUserMenu() {
+  const u = getUser();
+  showPopup(`
+    <div style="font-size:40px;margin-bottom:4px">👤</div>
+    <h3>${u.nickname}</h3>
+    <p style="font-size:12px;color:#999;margin-bottom:16px">@${u.username}</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="window.authModule.syncToCloud().then(()=>{alert('存档已同步到云端！');closePopup()})" style="${btnStyle}">☁️ 同步存档到云端</button>
+      <button onclick="window.authModule.syncFromCloud().then(()=>{alert('已从云端恢复存档！');closePopup();location.reload()})" style="${btnStyle.replace('#667eea','#4caf50').replace('#764ba2','#43a047')}">📥 从云端恢复存档</button>
+      <button onclick="window._doLogout()" style="width:100%;padding:12px;border:2px solid #ddd;border-radius:10px;background:white;font-size:14px;cursor:pointer;font-family:inherit">退出登录</button>
+    </div>
+  `);
+  window._doLogout = () => {
+    logout();
+    closePopup();
+    updateAuthDisplay();
+  };
+}
+
+// ===== 云同步 =====
+function calcPower() {
+  let power = 0;
+  const cards = gameState.ownedCards;
+  for (const id in cards) {
+    const lv = cards[id].level || 1;
+    power += lv * 100 + 50;
+  }
+  power += gameState.totalStars * 20;
+  power += gameState.battleWins * 10;
+  return power;
+}
+
+async function syncToCloud() {
+  if (!isLoggedIn()) { console.log('[sync] 未登录，跳过云端同步'); return; }
+  const power = calcPower();
+  console.log('[sync] 正在同步到云端...', { cards: Object.keys(gameState.ownedCards).length, gachaCoins: gameState.gachaCoins });
+  await saveGameToCloud(gameState.data, power);
+  console.log('[sync] 云端同步完成');
+}
+
+async function syncFromCloud() {
+  if (!isLoggedIn()) return;
+  const data = await loadGameFromCloud();
+  if (data) {
+    // 云端数据优先，但保留默认初始卡（刘备/关羽/张飞）
+    const merged = { ...gameState.data, ...data };
+    merged.ownedCards = { ...data.ownedCards };
+    // 确保初始赠送的3张卡不会丢失
+    if (!merged.ownedCards.liubei) merged.ownedCards.liubei = { level: 1 };
+    if (!merged.ownedCards.guanyu) merged.ownedCards.guanyu = { level: 1 };
+    if (!merged.ownedCards.zhangfei) merged.ownedCards.zhangfei = { level: 1 };
+    gameState.data = merged;
+    gameState.save();
+  }
+}
+
+// ===== 自动同步（每5分钟） =====
+setInterval(() => {
+  if (isLoggedIn()) syncToCloud().catch(() => {});
+}, 5 * 60 * 1000);
+
+// ===== 弹窗辅助 =====
+function showPopup(html) {
+  closePopup();
+  const d = document.createElement('div');
+  d.id = 'auth-popup';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px';
+  d.innerHTML = `<div style="background:white;border-radius:20px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:fadeIn 0.3s">${html}
+    <button onclick="closePopup()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999">✕</button>
+  </div>`;
+  document.body.appendChild(d);
+  window.closePopup = closePopup;
+}
+
+function closePopup() {
+  const p = document.getElementById('auth-popup');
+  if (p) p.remove();
+}
