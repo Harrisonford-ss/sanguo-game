@@ -128,8 +128,13 @@ function showUserMenu() {
   `);
   window._doLogout = () => {
     logout();
+    gameState.reset();
     closePopup();
     updateAuthDisplay();
+    if (window.app) {
+      window.app.updateAllDisplays();
+      window.app.navigate('home');
+    }
   };
 }
 
