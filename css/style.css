@@ -2587,6 +2587,18 @@ body {
 }
 
 /* ===== 响应式 ===== */
+
+/* ── 手机（< 768px）：竖屏全高，内容单列 ── */
+@media (max-width: 767px) {
+  #app {
+    max-width: 100%;
+  }
+  .tab-bar {
+    max-width: 100%;
+  }
+}
+
+/* ── 平板 / 桌面（≥ 768px）：全宽全屏，内容区居中 ── */
 @media (min-width: 768px) {
   #app {
     max-width: 100%;
@@ -2594,66 +2606,78 @@ body {
 
   .tab-bar {
     max-width: 100%;
+    padding: 0 16px;
   }
 
+  /* 内容区最大宽度居中 */
+  .screen > * {
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* hero 全宽不受限 */
+  .home-hero {
+    max-width: 100% !important;
+    height: 300px;
+  }
+
+  .home-stats-bar {
+    max-width: 100% !important;
+  }
+
+  /* 入口卡片：4列 */
+  .home-entries {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    padding: 8px 24px 20px;
+    max-width: 100% !important;
+  }
+
+  /* 武将卡片：5列 */
   .cards-grid {
     grid-template-columns: repeat(5, 1fr);
   }
 
   .battle-available-cards {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(7, 1fr);
   }
 
-  .home-hero {
-    height: 320px;
+  /* hover 效果 */
+  .quiz-option:hover {
+    border-color: var(--wei);
+    background: var(--wei-light);
+    transform: translateX(4px);
   }
-
-  .home-entries {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  .home-entries .entry-card:nth-child(n+5) {
-    display: flex;
-  }
+  .action-card:hover .action-card-bg { transform: scale(1.12); }
+  .action-card:hover { box-shadow: var(--shadow-hover); }
+  .card-item:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+  .entry-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
 }
 
-@media (min-width: 1024px) {
+/* ── 大屏（≥ 1200px）：更宽内容区，5列入口 ── */
+@media (min-width: 1200px) {
+  .screen > * {
+    max-width: 1100px;
+  }
+
   .home-hero {
-    height: 380px;
+    height: 360px;
   }
 
   .home-entries {
     grid-template-columns: repeat(4, 1fr);
-    max-width: 1000px;
+    gap: 16px;
+    padding: 8px 32px 24px;
   }
 
   .cards-grid {
     grid-template-columns: repeat(6, 1fr);
   }
 
-  .tab-bar {
-    max-width: 100%;
-  }
-
-  .quiz-option:hover {
-    border-color: var(--wei);
-    background: var(--wei-light);
-    transform: translateX(4px);
-  }
-
-  .action-card:hover .action-card-bg {
-    transform: scale(1.12);
-  }
-
-  .action-card:hover {
-    box-shadow: var(--shadow-hover);
-  }
-
-  .card-item:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-hover);
+  .battle-available-cards {
+    grid-template-columns: repeat(8, 1fr);
   }
 }
