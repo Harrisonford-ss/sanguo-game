@@ -105,7 +105,7 @@ async function submitAuth(type) {
     await syncFromCloud();
     if (window.app) {
       window.app.updateAllDisplays();
-      window.app.showScreen('home'); // 跳回首页
+      window.app.navigate('home');
     }
   } else {
     errEl.textContent = result.error;
