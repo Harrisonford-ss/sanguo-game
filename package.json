@@ -2,9 +2,8 @@
   "name": "sanguo-game",
   "version": "1.0.0",
   "description": "三国志探险 - 寓教于乐的三国知识游戏",
-  "type": "module",
   "private": true,
-  "devDependencies": {
-    "sharp": "^0.34.5"
+  "scripts": {
+    "start": "npx serve . -l 8080"
   }
 }
