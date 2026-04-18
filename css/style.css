@@ -164,6 +164,19 @@ body {
   box-sizing: border-box;
 }
 
+/* 微信浏览器：底部功能栏约50px，增加额外留白防止遮挡 */
+html.wechat body {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 50px);
+}
+
+html.wechat .tab-bar {
+  bottom: 50px;
+}
+
+html.wechat .screen {
+  padding-bottom: calc(var(--tab-height) + 50px + 16px);
+}
+
 body {
   font-family: var(--font-body);
   background: var(--bg);
@@ -2665,6 +2678,59 @@ body {
   .action-card:hover { box-shadow: var(--shadow-hover); }
   .card-item:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
   .entry-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.35); }
+
+  /* ── 各板块内容区：居中约束宽度，避免在大屏拉得过宽 ── */
+  .screen {
+    padding-bottom: calc(80px + 24px);
+  }
+
+  /* 内容居中容器通用模式 */
+  #map-container,
+  .quiz-list-view,
+  .quiz-play-view,
+  #quiz-container,
+  #gacha-container,
+  #dungeon-container,
+  #leaderboard-container,
+  #achievements-container,
+  #monopoly-container,
+  .battle-select,
+  .battle-arena,
+  .cards-filter,
+  #cards-grid {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+  }
+
+  /* 问答题目区在宽屏居中 */
+  .quiz-question,
+  .quiz-options,
+  .quiz-progress,
+  .quiz-result,
+  .quiz-intro {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* 对战可用武将区 */
+  #battle-container {
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* 地图 SVG 居中 */
+  #map-container svg {
+    max-width: 100%;
+  }
+
+  /* 城市面板在宽屏不超过 600px */
+  .city-panel {
+    max-width: 600px;
+  }
 }
 
 /* ── 大屏（≥ 1200px）：更大图标，更高 hero ── */

@@ -13,6 +13,11 @@ import { initLeaderboard } from './leaderboard.js';
 import { initDungeon } from './dungeon.js';
 import { initAchievements, checkAchievements, renderAchievements } from './achievements.js';
 
+// 检测微信浏览器，添加 class 供 CSS 处理底部安全区
+if (/MicroMessenger/i.test(navigator.userAgent)) {
+  document.documentElement.classList.add('wechat');
+}
+
 class App {
   constructor() {
     this.currentScreen = 'home';
