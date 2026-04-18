@@ -103,7 +103,10 @@ async function submitAuth(type) {
     updateAuthDisplay();
     // 登录后尝试从云端加载存档
     await syncFromCloud();
-    if (window.app) window.app.updateAllDisplays();
+    if (window.app) {
+      window.app.updateAllDisplays();
+      window.app.showScreen('home'); // 跳回首页
+    }
   } else {
     errEl.textContent = result.error;
     errEl.style.color = '#ef5350';
@@ -178,8 +181,8 @@ function showPopup(html) {
   const d = document.createElement('div');
   d.id = 'auth-popup';
   d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px';
-  d.innerHTML = `<div style="background:white;border-radius:20px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:fadeIn 0.3s">${html}
-    <button onclick="closePopup()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#999">✕</button>
+  d.innerHTML = `<div style="background:white;border-radius:20px;padding:24px;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:fadeIn 0.3s;position:relative">${html}
+    <button onclick="closePopup()" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:#bbb;line-height:1">✕</button>
   </div>`;
   document.body.appendChild(d);
   window.closePopup = closePopup;
