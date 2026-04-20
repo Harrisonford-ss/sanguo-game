@@ -13,6 +13,7 @@ const FRAG = { common: 1, rare: 5, legend: 20 };
 export function initGacha() {
   window.gachaModule = { pull, refresh, _showPreview: showPreview };
   refresh();
+  initBannerParticles();
 }
 
 export function refresh() {
@@ -23,10 +24,56 @@ export function refresh() {
   const s10 = document.getElementById('gacha-ten-btn');
   if (s1) s1.disabled = coins < SINGLE_COST;
   if (s10) s10.disabled = coins < TEN_COST;
+
+  const rareLeft  = Math.max(0, PITY_RARE   - gameState.gachaPityRare);
+  const legendLeft= Math.max(0, PITY_LEGEND - gameState.gachaPityLegend);
   const pr = document.getElementById('gacha-pity-rare');
   const pl = document.getElementById('gacha-pity-legend');
-  if (pr) pr.textContent = Math.max(0, PITY_RARE - gameState.gachaPityRare);
-  if (pl) pl.textContent = Math.max(0, PITY_LEGEND - gameState.gachaPityLegend);
+  if (pr) pr.textContent = rareLeft;
+  if (pl) pl.textContent = legendLeft;
+
+  // 进度条
+  const barRare   = document.getElementById('gacha-bar-rare');
+  const barLegend = document.getElementById('gacha-bar-legend');
+  if (barRare)   barRare.style.width   = `${((PITY_RARE - rareLeft)   / PITY_RARE)   * 100}%`;
+  if (barLegend) barLegend.style.width = `${((PITY_LEGEND - legendLeft)/ PITY_LEGEND) * 100}%`;
+}
+
+// Banner 粒子
+export function initBannerParticles() {
+  const wrap = document.getElementById('gacha-particles');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    const size = 2 + Math.random() * 3;
+    const x = Math.random() * 100;
+    const dur = 4 + Math.random() * 5;
+    const delay = Math.random() * 6;
+    const colors = ['#ffd700','#d4b0ff','#7c4dff','#fff','#f5a623'];
+    p.style.cssText = `
+      position:absolute;border-radius:50%;pointer-events:none;
+      width:${size}px;height:${size}px;
+      left:${x}%;bottom:-10px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      opacity:0;animation:bannerFloat ${dur}s ease-in ${delay}s infinite;
+    `;
+    wrap.appendChild(p);
+  }
+  // inject keyframe once
+  if (!document.getElementById('banner-float-style')) {
+    const s = document.createElement('style');
+    s.id = 'banner-float-style';
+    s.textContent = `
+      @keyframes bannerFloat {
+        0%   { transform: translateY(0) scale(1); opacity:0; }
+        10%  { opacity: 0.7; }
+        90%  { opacity: 0.3; }
+        100% { transform: translateY(-220px) scale(0.4); opacity:0; }
+      }
+    `;
+    document.head.appendChild(s);
+  }
 }
 
 // ===== 抽卡 =====
@@ -73,174 +120,241 @@ function pullOne(isTenth = false) {
 }
 
 // ===== 抽卡动画 =====
+const RARITY_COLOR = { legend: '#ffd700', rare: '#7c4dff', common: '#66bb6a' };
+const RARITY_NAME  = { legend: '传　说', rare: '稀　有', common: '普　通' };
+const RARITY_BG    = { legend: 'linear-gradient(160deg,#1a0800,#2a1400)', rare: 'linear-gradient(160deg,#0a0820,#150d30)', common: 'linear-gradient(160deg,#081408,#0d1f0d)' };
+
+function injectGachaStyles() {
+  if (document.getElementById('gacha-anim-style')) return;
+  const s = document.createElement('style');
+  s.id = 'gacha-anim-style';
+  s.textContent = `
+    @keyframes gaOrb    { 0%,100%{transform:scale(1);filter:blur(0px)} 50%{transform:scale(1.2);filter:blur(2px)} }
+    @keyframes gaRing   { 0%{transform:scale(0.3);opacity:0.9} 100%{transform:scale(2.5);opacity:0} }
+    @keyframes gaFlipIn { 0%{transform:rotateY(90deg) scale(0.85);opacity:0} 60%{transform:rotateY(-8deg) scale(1.03)} 100%{transform:rotateY(0) scale(1);opacity:1} }
+    @keyframes gaSlideUp{ 0%{transform:translateY(60px);opacity:0} 100%{transform:translateY(0);opacity:1} }
+    @keyframes gaBeam   { 0%{opacity:0;height:0} 40%{opacity:1} 100%{opacity:0;height:120vh} }
+    @keyframes gaSpin   { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+    @keyframes gaParticle { 0%{transform:translate(0,0) scale(1);opacity:1} 100%{transform:translate(var(--px),var(--py)) scale(0);opacity:0} }
+    @keyframes gaCardFly { 0%{transform:translateY(80px) scale(0.7);opacity:0} 70%{transform:translateY(-6px) scale(1.04)} 100%{transform:translateY(0) scale(1);opacity:1} }
+    @keyframes gaLegendPulse { 0%,100%{box-shadow:0 0 20px #ffd70088,0 0 60px #ffd70033} 50%{box-shadow:0 0 40px #ffd700cc,0 0 100px #ffd70055} }
+  `;
+  document.head.appendChild(s);
+}
+
 async function playPullAnimation(results) {
+  injectGachaStyles();
   const bestRarity = results.some(r => r.rarity === 'legend') ? 'legend' :
                      results.some(r => r.rarity === 'rare') ? 'rare' : 'common';
+  const color = RARITY_COLOR[bestRarity];
 
-  // 创建全屏抽卡动画层
   const overlay = document.createElement('div');
   overlay.id = 'gacha-anim';
-  overlay.style.cssText = 'position:fixed;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;overflow:hidden';
-
-  // 阶段1：蓄力动画（1.5秒）
-  const bgColor = bestRarity === 'legend' ? '#1a0a2e' : bestRarity === 'rare' ? '#0a1628' : '#1a1a2e';
-  overlay.innerHTML = `
-    <div style="position:absolute;inset:0;background:${bgColor}"></div>
-    <div id="ga-charge" style="position:relative;z-index:1;text-align:center">
-      <div style="font-size:60px;animation:gaPulse 0.8s ease-in-out infinite">🎴</div>
-      <div style="color:rgba(255,255,255,0.5);font-size:13px;margin-top:12px">召唤中...</div>
-    </div>
-    <style>
-      @keyframes gaPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
-      @keyframes gaExplode { 0%{transform:scale(0);opacity:1} 100%{transform:scale(3);opacity:0} }
-      @keyframes gaCardIn { 0%{transform:rotateY(90deg) scale(0.5);opacity:0} 50%{transform:rotateY(-10deg) scale(1.05)} 100%{transform:rotateY(0) scale(1);opacity:1} }
-      @keyframes gaShine { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-    </style>`;
+  overlay.style.cssText = `position:fixed;inset:0;z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:${RARITY_BG[bestRarity]}`;
   document.body.appendChild(overlay);
-  await delay(1200);
+
+  // 阶段1：蓄力 orb
+  const orbWrap = document.createElement('div');
+  orbWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:16px';
+  orbWrap.innerHTML = `
+    <div style="position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center">
+      <div style="position:absolute;width:100px;height:100px;border-radius:50%;background:radial-gradient(circle,${color}88,transparent 70%);animation:gaOrb 0.9s ease-in-out infinite"></div>
+      <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid ${color}66;animation:gaRing 1.2s ease-out infinite"></div>
+      <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:2px solid ${color}33;animation:gaRing 1.2s ease-out 0.4s infinite"></div>
+      <div style="font-size:44px;position:relative;z-index:1">🎴</div>
+    </div>
+    <div style="color:rgba(255,255,255,0.5);font-size:13px;letter-spacing:2px">召　唤　中</div>`;
+  overlay.appendChild(orbWrap);
+  await delay(1100);
+  orbWrap.remove();
 
   // 阶段2：爆发光效
-  const chargeEl = document.getElementById('ga-charge');
-  if (chargeEl) chargeEl.remove();
-
-  // 光爆
-  const burstColor = bestRarity === 'legend' ? 'radial-gradient(circle,#ffd700,#ff8c00,transparent 70%)' :
-                     bestRarity === 'rare' ? 'radial-gradient(circle,#7c4dff,#448aff,transparent 70%)' :
-                     'radial-gradient(circle,#66bb6a,#4caf50,transparent 70%)';
-
-  const burst = document.createElement('div');
-  burst.style.cssText = `position:absolute;width:300px;height:300px;border-radius:50%;background:${burstColor};animation:gaExplode 0.8s ease-out forwards;z-index:2`;
-  overlay.appendChild(burst);
-
-  // 传说特效：旋转光线
   if (bestRarity === 'legend') {
-    const shine = document.createElement('div');
-    shine.style.cssText = 'position:absolute;width:400px;height:400px;z-index:1;animation:gaShine 3s linear infinite;opacity:0.3';
-    shine.innerHTML = `<svg viewBox="0 0 400 400"><polygon points="200,0 210,180 400,200 210,220 200,400 190,220 0,200 190,180" fill="#ffd700" opacity="0.5"/></svg>`;
-    overlay.appendChild(shine);
+    // 光柱
+    const beam = document.createElement('div');
+    beam.style.cssText = `position:absolute;bottom:50%;left:50%;transform:translateX(-50%);width:4px;background:linear-gradient(transparent,${color},white);border-radius:2px;animation:gaBeam 0.6s ease-out forwards;z-index:1`;
+    overlay.appendChild(beam);
+    // 旋转星芒
+    const star = document.createElement('div');
+    star.style.cssText = `position:absolute;width:200px;height:200px;z-index:2;animation:gaSpin 1.5s linear infinite;opacity:0.5`;
+    star.innerHTML = `<svg viewBox="0 0 200 200" style="width:100%;height:100%"><polygon points="100,0 108,88 200,100 108,112 100,200 92,112 0,100 92,88" fill="${color}"/></svg>`;
+    overlay.appendChild(star);
+    await delay(400);
+    star.style.opacity = '0';
   }
 
-  await delay(600);
-  burst.remove();
+  // 光圈扩散
+  const burst = document.createElement('div');
+  burst.style.cssText = `position:absolute;width:200px;height:200px;border-radius:50%;border:3px solid ${color};animation:gaRing 0.6s ease-out forwards;z-index:3`;
+  overlay.appendChild(burst);
+  await delay(500);
 
   // 阶段3：展示卡牌
   if (results.length === 1) {
-    await showSingleCard(overlay, results[0]);
+    await showSingleCard(overlay, results[0], bestRarity);
   } else {
-    await showMultiCards(overlay, results);
+    await showMultiCards(overlay, results, bestRarity);
   }
 }
 
-async function showSingleCard(overlay, result) {
+async function showSingleCard(overlay, result, bestRarity) {
   const c = result.char;
   const rc = result.rarity;
-  const borderColor = rc === 'legend' ? '#ffd700' : rc === 'rare' ? '#7c4dff' : '#66bb6a';
-  const rarityName = rc === 'legend' ? '传 说' : rc === 'rare' ? '稀 有' : '普 通';
+  const color = RARITY_COLOR[rc];
   const dupText = result.isNew ? '🆕 新武将！' : `+5 ${c.name}碎片`;
+  const isLegend = rc === 'legend';
 
-  const cardHtml = `
-    <div style="position:relative;z-index:5;width:260px;animation:gaCardIn 0.6s ease-out" onclick="document.getElementById('gacha-anim')?.remove()">
-      <div style="border-radius:16px;overflow:hidden;border:3px solid ${borderColor};box-shadow:0 0 30px ${borderColor}66;background:#fff">
-        <img src="images/cardart/${c.id}.webp" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block" onerror="this.remove()">
-        <div style="padding:14px;text-align:center">
-          <div style="font-size:12px;color:${borderColor};font-weight:700;letter-spacing:3px;margin-bottom:2px">${rarityName}</div>
-          <div style="font-size:22px;font-weight:900;font-family:ZCOOL XiaoWei,serif">${c.name}</div>
-          <div style="font-size:12px;color:#888;margin:2px 0">${c.title}</div>
-          <div style="font-size:14px;color:#f5a623;font-weight:700;margin-top:6px">${dupText}</div>
+  // 清空 overlay 内子元素
+  overlay.innerHTML = '';
+  overlay.style.background = RARITY_BG[rc];
+
+  const card = document.createElement('div');
+  card.style.cssText = `position:relative;z-index:5;width:min(260px,80vw);animation:gaFlipIn 0.65s cubic-bezier(0.16,1,0.3,1);cursor:pointer;perspective:800px;${isLegend?'animation:gaFlipIn 0.65s cubic-bezier(0.16,1,0.3,1),gaLegendPulse 2s ease-in-out 0.7s infinite':''}`;
+  card.innerHTML = `
+    <div style="border-radius:18px;overflow:hidden;border:2.5px solid ${color};box-shadow:0 0 40px ${color}55,0 8px 32px rgba(0,0,0,0.6)">
+      <div style="position:relative;aspect-ratio:3/4;overflow:hidden;background:#111">
+        <img src="images/cardart/${c.id}.webp" style="width:100%;height:100%;object-fit:cover;display:block;animation:slowZoom 8s ease-in-out infinite alternate" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,0.85))"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;text-align:center">
+          <div style="font-size:11px;color:${color};font-weight:800;letter-spacing:4px;margin-bottom:4px">${RARITY_NAME[rc]}</div>
+          <div style="font-size:26px;font-weight:900;font-family:ZCOOL XiaoWei,serif;color:white;text-shadow:0 2px 8px rgba(0,0,0,0.8)">${c.name}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px">${c.title}</div>
         </div>
+        ${isLegend ? `<div style="position:absolute;top:10px;right:10px;background:#ffd700;color:#1a0800;font-size:10px;font-weight:800;padding:3px 8px;border-radius:10px;letter-spacing:1px">LEGEND</div>` : ''}
       </div>
-      <div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;margin-top:12px">点击关闭</div>
-    </div>`;
+      <div style="background:rgba(10,5,20,0.95);padding:12px 16px;text-align:center;border-top:1px solid ${color}44">
+        <div style="font-size:15px;font-weight:700;color:${color}">${dupText}</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:rgba(255,255,255,0.35);font-size:11px;margin-top:14px;letter-spacing:1px">点击关闭</div>`;
+  overlay.appendChild(card);
 
-  overlay.innerHTML += cardHtml;
+  // 粒子
+  spawnParticles(overlay, rc, isLegend ? 40 : rc === 'rare' ? 20 : 8);
 
-  // 传说卡撒金粉
-  if (rc === 'legend') {
-    for (let i = 0; i < 30; i++) {
-      const p = document.createElement('div');
-      p.style.cssText = `position:absolute;width:4px;height:4px;border-radius:50%;background:#ffd700;
-        left:${Math.random()*100}%;top:${Math.random()*100}%;
-        animation:confettiFall ${1.5+Math.random()*2}s ease-out ${Math.random()*0.5}s forwards;opacity:0.7`;
-      overlay.appendChild(p);
-    }
-  }
-
-  // 等待点击关闭
   await new Promise(resolve => {
     overlay.addEventListener('click', () => { overlay.remove(); resolve(); }, { once: true });
   });
 }
 
-async function showMultiCards(overlay, results) {
-  // 十连：依次翻牌
-  let html = `<div style="position:relative;z-index:5;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:360px;padding:10px">`;
+async function showMultiCards(overlay, results, bestRarity) {
+  overlay.innerHTML = '';
+  overlay.style.cssText += ';justify-content:flex-start;padding-top:16px';
 
-  results.forEach((r, i) => {
+  const color = RARITY_COLOR[bestRarity];
+
+  // 标题行
+  const title = document.createElement('div');
+  title.style.cssText = 'color:rgba(255,255,255,0.7);font-size:13px;letter-spacing:2px;margin-bottom:12px;animation:gaSlideUp 0.4s ease-out';
+  title.textContent = '十连召唤结果';
+  overlay.appendChild(title);
+
+  // 卡牌网格
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:6px;max-width:360px;width:90%;z-index:5';
+  overlay.appendChild(grid);
+
+  // 依次翻牌
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
     const c = r.char;
     const rc = r.rarity;
-    const borderColor = rc === 'legend' ? '#ffd700' : rc === 'rare' ? '#7c4dff' : '#66bb6a';
-    const bg = rc === 'legend' ? '#fffde7' : rc === 'rare' ? '#e8eaf6' : '#f5f5f5';
+    const col = RARITY_COLOR[rc];
     const dupText = r.isNew ? '新!' : `+${FRAG[rc]}`;
 
-    html += `<div style="width:62px;border-radius:10px;overflow:hidden;border:2px solid ${borderColor};
-      background:${bg};text-align:center;
-      animation:gaCardIn 0.4s ease-out ${i * 0.1}s backwards;
-      box-shadow:0 2px 8px ${borderColor}33;cursor:pointer"
-      onclick="window.gachaModule._showPreview('${c.id}')">
-      <img src="images/cardart/${c.id}.webp" style="width:100%;aspect-ratio:3/4;object-fit:cover;display:block" onerror="this.remove()">
-      <div style="padding:3px;font-size:8px;font-weight:700">${c.name}</div>
-      <div style="font-size:7px;color:${borderColor};padding-bottom:3px">${dupText}</div>
-    </div>`;
-  });
+    const cardEl = document.createElement('div');
+    cardEl.style.cssText = `border-radius:10px;overflow:hidden;border:2px solid ${col};
+      background:rgba(10,5,20,0.9);text-align:center;cursor:pointer;
+      box-shadow:0 2px 12px ${col}44;
+      opacity:0;animation:gaCardFly 0.35s cubic-bezier(0.16,1,0.3,1) ${i*0.08}s forwards;
+      transition:transform 0.15s`;
+    cardEl.innerHTML = `
+      <div style="position:relative;aspect-ratio:3/4;overflow:hidden;background:#0a0514">
+        <img src="images/cardart/${c.id}.webp" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">
+        <div style="position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,0.7))"></div>
+        ${rc === 'legend' ? `<div style="position:absolute;top:3px;right:3px;font-size:8px;background:#ffd700;color:#1a0800;padding:1px 4px;border-radius:4px;font-weight:800">★</div>` : ''}
+      </div>
+      <div style="padding:4px 2px 5px">
+        <div style="font-size:9px;font-weight:800;color:white">${c.name}</div>
+        <div style="font-size:8px;color:${col};margin-top:1px">${dupText}</div>
+      </div>`;
+    cardEl.onclick = () => showPreview(c.id);
+    cardEl.onmouseenter = () => { cardEl.style.transform = 'scale(1.06)'; };
+    cardEl.onmouseleave = () => { cardEl.style.transform = ''; };
+    grid.appendChild(cardEl);
 
-  html += `</div>
-    <div style="position:relative;z-index:5;text-align:center;margin-top:10px">
-      <button onclick="document.getElementById('gacha-anim')?.remove()" style="
-        padding:8px 32px;border:none;border-radius:12px;background:rgba(255,255,255,0.15);
-        color:white;font-size:14px;cursor:pointer;backdrop-filter:blur(4px);font-family:inherit">确 认</button>
-    </div>`;
-
-  overlay.innerHTML += html;
-
-  // 最高稀有度光效
-  const best = results.find(r => r.rarity === 'legend') || results.find(r => r.rarity === 'rare');
-  if (best && best.rarity === 'legend') {
-    for (let i = 0; i < 20; i++) {
-      const p = document.createElement('div');
-      p.style.cssText = `position:absolute;width:3px;height:3px;border-radius:50%;background:#ffd700;
-        left:${Math.random()*100}%;top:${Math.random()*100}%;
-        animation:confettiFall ${1+Math.random()*2}s ease-out ${Math.random()*0.8}s forwards;opacity:0.6`;
-      overlay.appendChild(p);
+    // 传说卡出现时额外闪光
+    if (rc === 'legend') {
+      await delay(i * 80 + 200);
+      spawnParticles(overlay, 'legend', 12);
     }
   }
 
+  // 粒子
+  if (bestRarity === 'legend') spawnParticles(overlay, 'legend', 25);
+  else if (bestRarity === 'rare') spawnParticles(overlay, 'rare', 10);
+
+  // 确认按钮
+  const btn = document.createElement('button');
+  btn.style.cssText = `margin-top:16px;padding:10px 40px;border:1px solid ${color}66;border-radius:14px;
+    background:rgba(255,255,255,0.08);color:white;font-size:14px;font-weight:600;
+    cursor:pointer;backdrop-filter:blur(8px);font-family:inherit;letter-spacing:1px;
+    animation:gaSlideUp 0.4s ease-out;z-index:5`;
+  btn.textContent = '确 认';
+  overlay.appendChild(btn);
+
   await new Promise(resolve => {
-    const btn = overlay.querySelector('button');
-    if (btn) btn.addEventListener('click', resolve, { once: true });
-    else setTimeout(resolve, 5000);
+    btn.addEventListener('click', resolve, { once: true });
   });
   overlay.remove();
+}
+
+function spawnParticles(container, rarity, count) {
+  const colors = rarity === 'legend' ? ['#ffd700','#ffb300','#fff8e1','#ffffff'] :
+                 rarity === 'rare'   ? ['#7c4dff','#b39ddb','#e8eaf6','#ffffff'] :
+                                       ['#66bb6a','#a5d6a7','#ffffff'];
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    const size = 2 + Math.random() * 4;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 80 + Math.random() * 180;
+    p.style.cssText = `
+      position:absolute;border-radius:50%;pointer-events:none;z-index:10;
+      width:${size}px;height:${size}px;
+      left:${30 + Math.random()*40}%;top:${20 + Math.random()*40}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --px:${Math.cos(angle)*dist}px;--py:${Math.sin(angle)*dist}px;
+      animation:gaParticle ${0.8+Math.random()*0.8}s ease-out ${Math.random()*0.3}s forwards;
+    `;
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1800);
+  }
 }
 
 // ===== 大图预览 =====
 function showPreview(charId) {
   const char = getCharacter(charId); if (!char) return;
   const r = char.rarity;
-  const border = r === 'legend' ? '#ffd700' : r === 'rare' ? '#7c4dff' : '#66bb6a';
+  const color = RARITY_COLOR[r];
 
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;cursor:pointer';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;cursor:pointer;backdrop-filter:blur(4px)';
   ov.onclick = () => ov.remove();
-  ov.innerHTML = `<div style="max-width:300px;width:100%;animation:gaCardIn 0.4s ease-out">
-    <div style="border-radius:16px;overflow:hidden;border:3px solid ${border};box-shadow:0 0 40px ${border}44">
-      <img src="images/cardart/${charId}.webp" style="width:100%;display:block" onerror="this.remove()">
-      <div style="padding:12px;text-align:center;background:white">
-        <div style="font-size:20px;font-weight:900">${char.name}</div>
-        <div style="font-size:12px;color:#888">${char.title}</div>
+  ov.innerHTML = `
+    <div style="max-width:300px;width:100%;animation:gaFlipIn 0.45s cubic-bezier(0.16,1,0.3,1)">
+      <div style="border-radius:18px;overflow:hidden;border:2.5px solid ${color};box-shadow:0 0 60px ${color}55,0 12px 40px rgba(0,0,0,0.7)">
+        <div style="position:relative;aspect-ratio:3/4;overflow:hidden;background:#0a0514">
+          <img src="images/cardart/${charId}.webp" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display='none'">
+          <div style="position:absolute;inset:0;background:linear-gradient(transparent 55%,rgba(0,0,0,0.85))"></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:20px;text-align:center">
+            <div style="font-size:11px;color:${color};font-weight:800;letter-spacing:4px;margin-bottom:4px">${RARITY_NAME[r]}</div>
+            <div style="font-size:28px;font-weight:900;font-family:ZCOOL XiaoWei,serif;color:white">${char.name}</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:3px">${char.title}</div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;margin-top:8px">点击关闭</div>
-  </div>`;
+      <div style="text-align:center;color:rgba(255,255,255,0.3);font-size:11px;margin-top:12px;letter-spacing:1px">点击关闭</div>
+    </div>`;
   document.body.appendChild(ov);
 }
 
