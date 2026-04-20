@@ -48,7 +48,7 @@ export function initMap() {
     gameState.save();
     gameState.emit('coins-changed');
     closeStagePopup();
-    showToast(`⚡ 扫荡×${actualTimes}！+${totalReward} 🎫答题积分`);
+    showSweepResult(actualTimes, totalReward);
     refresh();
   };
 
@@ -191,6 +191,33 @@ function showToast(msg) {
   t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.4s';
   document.body.appendChild(t);
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 1800);
+}
+
+function showSweepResult(times, reward) {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:2000;pointer-events:none';
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:28px 36px;text-align:center;
+      box-shadow:0 16px 48px rgba(0,0,0,0.22);animation:sweepPopIn 0.25s cubic-bezier(.34,1.56,.64,1);pointer-events:auto;min-width:200px">
+      <div style="font-size:40px;margin-bottom:8px">⚡</div>
+      <div style="font-size:18px;font-weight:900;color:#7b1fa2;margin-bottom:6px">扫荡完成</div>
+      <div style="font-size:14px;color:#555;margin-bottom:12px">共扫荡 <b>${times}</b> 次</div>
+      ${reward > 0
+        ? `<div style="display:inline-block;background:linear-gradient(135deg,#f5a623,#f0801a);color:#fff;font-size:16px;font-weight:800;padding:6px 20px;border-radius:12px;box-shadow:0 3px 10px rgba(245,166,35,0.4)">+${reward} 🎫 答题积分</div>`
+        : `<div style="font-size:13px;color:#aaa">今日奖励已领完</div>`}
+    </div>`;
+  if (!document.getElementById('sweep-pop-style')) {
+    const s = document.createElement('style');
+    s.id = 'sweep-pop-style';
+    s.textContent = '@keyframes sweepPopIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}}';
+    document.head.appendChild(s);
+  }
+  document.body.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, 1800);
 }
 
 function refresh() {
