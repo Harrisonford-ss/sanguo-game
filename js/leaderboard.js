@@ -92,9 +92,7 @@ async function renderRank(el) {
       const unit = isPower ? '战力' : '层';
       const sub = isPower
         ? `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`
-        : row.dungeon_floor_at
-          ? `达成于 ${new Date(row.dungeon_floor_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}`
-          : '暂无记录';
+        : `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`;
 
       return `<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:10px;margin-bottom:5px;
         ${isMe

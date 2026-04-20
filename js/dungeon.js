@@ -8,7 +8,6 @@ import { quizzes } from '../data/quizzes.js';
 import { avatarHTML } from './avatars.js';
 import { calcStats } from './battle.js';
 import { timelineQuizzes } from '../data/timeline.js';
-import { syncDungeonFloor } from './supabase.js';
 
 // ===== 武将被动技能 =====
 const PASSIVES = {
@@ -133,13 +132,7 @@ function incDailyCount() {
 // ===== 扫荡存档 =====
 const SWEEP_KEY = 'dungeon_best_floor';
 function getBestFloor() { return parseInt(localStorage.getItem(SWEEP_KEY) || '0'); }
-function saveBestFloor(f) {
-  const cur = getBestFloor();
-  if (f > cur) {
-    localStorage.setItem(SWEEP_KEY, f);
-    syncDungeonFloor(f).catch(() => {});
-  }
-}
+function saveBestFloor(f) { const cur = getBestFloor(); if (f > cur) localStorage.setItem(SWEEP_KEY, f); }
 // 扫荡里程碑：每5层一档，bestFloor=8→milestone=5，bestFloor=13→milestone=10
 function sweepMilestone() { return Math.floor(getBestFloor() / 5) * 5; }
 

@@ -140,6 +140,7 @@ export async function saveGameToCloud(gameData, power) {
     power: power,
     card_count: Object.keys(gameData.ownedCards || {}).length,
     win_count: gameData.battleWins || 0,
+    dungeon_floor: gameData.dungeonMaxFloor || 0,
     updated_at: new Date().toISOString()
   });
 }
@@ -157,16 +158,6 @@ export async function getLeaderboard(limit = 50) {
 
 export async function getFloorLeaderboard(limit = 50) {
   return query('sanguo_leaderboard', `order=dungeon_floor.desc&limit=${limit}`);
-}
-
-export async function syncDungeonFloor(floor) {
-  if (!currentUser) return;
-  await patchOrInsert('sanguo_leaderboard', 'user_id', currentUser.id, {
-    nickname: currentUser.nickname,
-    avatar: currentUser.avatar || 'liubei',
-    dungeon_floor: floor,
-    dungeon_floor_at: new Date().toISOString()
-  });
 }
 
 // ===== 擂台 =====
