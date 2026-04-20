@@ -257,42 +257,22 @@ async function syncToCloud() {
 async function syncFromCloud() {
   if (!isLoggedIn()) return;
   const data = await loadGameFromCloud();
-  if (data) {
-    const local = gameState.data;
-    // 进度类字段取较大值，防止旧云端存档覆盖本地新进度
-    const merged = { ...local, ...data };
-    const takeMax = ['quizCoins','gachaCoins','gold','totalStars','currentStage',
-      'battleWins','dungeonMaxFloor','totalQuizCorrect','totalGoldEarned',
-      'totalGachaPulls','tenPullCount','monopolyWins','dungeonRuns',
-      'quizPerfectCount','consecutiveWins','maxConsecutiveWins','cardUpgradeCount','maxCardLevel'];
-    for (const k of takeMax) {
-      merged[k] = Math.max(Number(local[k] || 0), Number(data[k] || 0));
-    }
-    // stageStars 合并取每关较大星数
-    merged.stageStars = { ...data.stageStars };
-    const localStars = local.stageStars || {};
-    for (const k of Object.keys(localStars)) {
-      merged.stageStars[k] = Math.max(localStars[k] || 0, merged.stageStars[k] || 0);
-    }
-    // ownedCards 合并两边拥有的卡
-    merged.ownedCards = { ...data.ownedCards, ...local.ownedCards };
-    for (const id of Object.keys(merged.ownedCards)) {
-      const lv = Math.max(
-        local.ownedCards?.[id]?.level || 0,
-        data.ownedCards?.[id]?.level || 0
-      );
-      merged.ownedCards[id] = { level: Math.max(lv, 1) };
-    }
-    // 确保初始赠送的3张卡不会丢失
-    if (!merged.ownedCards.liubei) merged.ownedCards.liubei = { level: 1 };
-    if (!merged.ownedCards.guanyu) merged.ownedCards.guanyu = { level: 1 };
-    if (!merged.ownedCards.zhangfei) merged.ownedCards.zhangfei = { level: 1 };
-    // 体力保留本地值（本地有实时恢复计算）
-    merged.stamina = local.stamina ?? data.stamina;
-    merged.staminaLastRegen = local.staminaLastRegen || data.staminaLastRegen;
-    gameState.data = merged;
-    gameState.save();
-  }
+  if (!data) return;
+
+  const localTs = gameState.data.lastSaved || 0;
+  const cloudTs = data.lastSaved || 0;
+
+  // 云端比本地更新（换设备场景）才覆盖，否则保留本地存档
+  if (cloudTs <= localTs) return;
+
+  const merged = { ...data };
+  // 确保初始赠送的3张卡不会丢失
+  merged.ownedCards = { ...data.ownedCards };
+  if (!merged.ownedCards.liubei) merged.ownedCards.liubei = { level: 1 };
+  if (!merged.ownedCards.guanyu) merged.ownedCards.guanyu = { level: 1 };
+  if (!merged.ownedCards.zhangfei) merged.ownedCards.zhangfei = { level: 1 };
+  gameState.data = merged;
+  gameState.save();
 }
 
 // ===== 自动同步（每5分钟） =====

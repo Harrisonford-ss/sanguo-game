@@ -77,6 +77,7 @@ class GameState {
 
   save() {
     try {
+      this.data.lastSaved = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
     } catch (e) {}
   }
