@@ -262,29 +262,44 @@ class GameState {
   get currentStage() { return this.data.currentStage; }
   get totalStars() { return this.data.totalStars; }
 
-  getStageStars(stageId) {
-    return this.data.stageStars[stageId] || 0;
+  // difficulty: 'normal'|'elite'|'legend'
+  _stageKey(stageId, difficulty = 'normal') {
+    return difficulty === 'normal' ? stageId : `${stageId}_${difficulty}`;
+  }
+
+  getStageStars(stageId, difficulty = 'normal') {
+    return this.data.stageStars[this._stageKey(stageId, difficulty)] || 0;
+  }
+
+  // 精英/传说需要普通通关才能解锁
+  isDifficultyUnlocked(stageId, difficulty) {
+    if (difficulty === 'normal') return true;
+    if (difficulty === 'elite')  return this.getStageStars(stageId, 'normal') > 0;
+    if (difficulty === 'legend') return this.getStageStars(stageId, 'elite') > 0;
+    return false;
   }
 
   // 完成关卡，返回本次获得的星和答题积分
-  completeStage(stageId, stars) {
-    const prev = this.data.stageStars[stageId] || 0;
+  completeStage(stageId, stars, difficulty = 'normal') {
+    const key = this._stageKey(stageId, difficulty);
+    const prev = this.data.stageStars[key] || 0;
     const newStars = Math.max(prev, stars);
     const starsGained = newStars - prev;
 
-    this.data.stageStars[stageId] = newStars;
+    this.data.stageStars[key] = newStars;
     this.data.totalStars += starsGained;
     this.data.battleWins++;
     this.data.consecutiveWins = (this.data.consecutiveWins || 0) + 1;
     this.data.maxConsecutiveWins = Math.max(this.data.maxConsecutiveWins || 0, this.data.consecutiveWins);
 
-    // 解锁下一关
-    if (stageId >= this.data.currentStage) {
+    // 只有普通难度推进关卡进度
+    if (difficulty === 'normal' && stageId >= this.data.currentStage) {
       this.data.currentStage = stageId + 1;
     }
 
-    // 对战奖励答题积分: 1星=1, 2星=2, 3星=3
-    const quizReward = stars;
+    // 奖励倍率：普通×1 精英×2 传说×3
+    const multi = difficulty === 'legend' ? 3 : difficulty === 'elite' ? 2 : 1;
+    const quizReward = stars * multi;
     this.data.quizCoins += quizReward;
 
     this.save();

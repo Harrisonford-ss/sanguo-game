@@ -8,6 +8,13 @@ import { avatarHTML } from './avatars.js';
 
 let selectedTeam = [null, null, null];
 let currentStageId = null;
+let currentDifficulty = 'normal'; // 'normal'|'elite'|'legend'
+
+const DIFF_CONFIG = {
+  normal: { label: '普通', icon: '⚔️',  npcMult: 1.0, color: '#4caf50' },
+  elite:  { label: '精英', icon: '🔥',  npcMult: 1.6, color: '#ff9800' },
+  legend: { label: '传说', icon: '👑',  npcMult: 2.4, color: '#f5a623' },
+};
 
 // ===== 战斗属性计算 =====
 // 设计目标：
@@ -56,12 +63,14 @@ export function initBattle() {
   window.battleModule = { refresh, startFight, startStageBattle };
 }
 
-export function startStageBattle(stageId) {
+export function startStageBattle(stageId, difficulty = 'normal') {
   currentStageId = stageId;
+  currentDifficulty = difficulty;
   if (window.app?.navigate) window.app.navigate('battle');
   setTimeout(() => {
     selectedTeam = [null, null, null];
     const stage = getStage(stageId);
+    const dc = DIFF_CONFIG[difficulty];
     const header = document.querySelector('#screen-battle .screen-header h2');
     if (header && stage) header.textContent = `第${stage.id}关 · ${stage.name}`;
     showSelectScreen();
@@ -104,9 +113,12 @@ function showSelectScreen() {
       ${stage ? `<div style="position:relative;border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow)">
         <img src="${stage.sceneImg}" style="width:100%;height:100px;object-fit:cover;display:block" onerror="this.style.display='none'">
         <div style="position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(0,0,0,0.7));display:flex;align-items:flex-end;padding:10px 14px">
-          <div style="color:white">
+          <div style="color:white;flex:1">
             <div style="font-size:16px;font-weight:800">${stage.name}</div>
             <div style="font-size:12px;opacity:0.8">${stage.description} · 难度${'🔥'.repeat(stage.difficulty)}</div>
+          </div>
+          <div style="background:${DIFF_CONFIG[currentDifficulty].color};color:white;font-size:11px;font-weight:800;padding:3px 10px;border-radius:12px;white-space:nowrap">
+            ${DIFF_CONFIG[currentDifficulty].icon} ${DIFF_CONFIG[currentDifficulty].label}
           </div>
         </div>
       </div>` : ''}
@@ -209,11 +221,19 @@ async function startFight() {
   const myTeam = selectedTeam.map(id => ({ ...calcStats(id), hp: 0 }));
   myTeam.forEach(u => u.hp = u.maxHp);
 
-  // NPC用固定等级：关卡难度决定NPC等级(1-5)
+  // NPC等级 + 难度倍率加成
   const npcLv = Math.min(5, Math.ceil(stage.difficulty * 1.0));
+  const npcMult = DIFF_CONFIG[currentDifficulty].npcMult;
   const npcTeam = stage.npcTeam.map(id => {
-    const s = calcStats(id, npcLv); // 用固定等级，不读玩家本地数据
+    const s = calcStats(id, npcLv);
     if (!s) return null;
+    // 精英/传说对NPC全属性加成
+    if (npcMult !== 1) {
+      s.atk  = Math.round(s.atk  * npcMult);
+      s.def  = Math.round(s.def  * npcMult);
+      s.int  = Math.round(s.int  * npcMult);
+      s.maxHp= Math.round(s.maxHp* npcMult);
+    }
     s.hp = s.maxHp;
     return s;
   }).filter(Boolean);
@@ -398,7 +418,7 @@ async function runBattle(my, npc, stage) {
     myAlive.reduce((s,u) => s+u.hp, 0) > npcAlive.reduce((s,u) => s+u.hp, 0));
 
   await delay(500);
-  showResult(won, myAlive.length, stage);
+  showResult(won, myAlive.length, stage, currentDifficulty);
 }
 
 async function executeAttack(atk, def, useInt, allUnits) {
@@ -513,13 +533,15 @@ async function executeAttack(atk, def, useInt, allUnits) {
 }
 
 // ===== 战斗结果 =====
-function showResult(won, surviving, stage) {
+function showResult(won, surviving, stage, difficulty = 'normal') {
+  const dc = DIFF_CONFIG[difficulty];
   let reward = '';
   if (won) {
-    const stars = surviving; // 存活人数=星数
-    const { starsGained, quizReward } = gameState.completeStage(stage.id, stars);
+    const stars = surviving;
+    const { starsGained, quizReward } = gameState.completeStage(stage.id, stars, difficulty);
     reward = `
-      <div style="margin:12px 0">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
+      <div style="margin:8px 0">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
+      <div style="display:inline-block;background:${dc.color};color:white;font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px;margin-bottom:6px">${dc.icon} ${dc.label}</div>
       <p style="color:var(--gold);font-weight:700;font-size:16px">+${quizReward} 🎫答题积分</p>`;
     if (window.effects) window.effects.flashPulse('rgba(245,166,35,0.4)');
     // 关卡通关后同步到云端
@@ -540,7 +562,7 @@ function showResult(won, surviving, stage) {
         ${!won ? '<p style="color:#ccc;font-size:13px">升级武将再来挑战！</p>' : ''}
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
           ${won ? '<button class="btn btn-primary" onclick="window.app.navigate(\'quiz\')">去答题</button>' : ''}
-          <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.battleModule.startStageBattle(${stage.id})">🔄 再来</button>
+          <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.battleModule.startStageBattle(${stage.id},'${difficulty}')">🔄 再来</button>
           <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.app.navigate('map')">🏠 返回</button>
         </div>
       </div>`;

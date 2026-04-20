@@ -6,12 +6,18 @@ import { stages, getStage } from '../data/stages.js';
 import { getCharacter } from '../data/characters.js';
 import { avatarHTML } from './avatars.js';
 
+const DIFF_CONFIG = {
+  normal: { label: '普通', icon: '⚔️',  color: '#4caf50', bg: '#e8f5e9' },
+  elite:  { label: '精英', icon: '🔥',  color: '#ff9800', bg: '#fff3e0' },
+  legend: { label: '传说', icon: '👑',  color: '#f5a623', bg: '#fff8e1' },
+};
+
 export function initMap() {
   window.mapModule = { refresh, closePanel };
-  window._goStage = (id) => {
+  window._goStage = (id, difficulty = 'normal') => {
     if (gameState.stamina <= 0) return;
     if (window.battleModule?.startStageBattle) {
-      window.battleModule.startStageBattle(id);
+      window.battleModule.startStageBattle(id, difficulty);
     } else {
       alert('战斗模块加载中，请稍后重试');
     }
@@ -79,16 +85,42 @@ function renderStageCard(stage, currentStage, totalStars) {
         <p class="stage-desc">${stage.description}</p>
         <div class="stage-meta">
           <div class="stage-npc-row">${npcAvatars}</div>
-          <div class="stage-stars-row">${starsHTML}</div>
         </div>
-        <div class="stage-difficulty">
-          ${'🔥'.repeat(stage.difficulty)}${'<span style="opacity:0.2">🔥</span>'.repeat(5 - stage.difficulty)}
-        </div>
-        ${!locked && !completed ? `<div class="stage-reward">奖励: +${stage.reward.quizCoins} 答题积分</div>` : ''}
-        ${!locked && gameState.stamina <= 0 ? `<div style="font-size:11px;color:#ef5350;margin-top:4px;font-weight:600">❤️ 体力不足，点击查看</div>` : ''}
+        ${!locked ? difficultyButtons(stage) : ''}
+        ${!locked && gameState.stamina <= 0 ? `<div style="font-size:11px;color:#ef5350;margin-top:6px;font-weight:600">❤️ 体力不足</div>` : ''}
       </div>
     </div>
   `;
+}
+
+function difficultyButtons(stage) {
+  const noStamina = gameState.stamina <= 0;
+  return `<div style="display:flex;gap:6px;margin-top:10px">
+    ${['normal','elite','legend'].map(diff => {
+      const dc = DIFF_CONFIG[diff];
+      const unlocked = gameState.isDifficultyUnlocked(stage.id, diff);
+      const stars = gameState.getStageStars(stage.id, diff);
+      const starsStr = stars > 0 ? '⭐'.repeat(stars) : '';
+      const multi = diff === 'legend' ? '×3' : diff === 'elite' ? '×2' : '×1';
+
+      if (!unlocked) {
+        const need = diff === 'elite' ? '通关普通' : '通关精英';
+        return `<div style="flex:1;border-radius:10px;border:1.5px solid #eee;background:#fafafa;padding:7px 4px;text-align:center;opacity:0.5">
+          <div style="font-size:14px">🔒</div>
+          <div style="font-size:9px;color:#aaa;margin-top:2px">${need}</div>
+        </div>`;
+      }
+
+      return `<button onclick="window._goStage(${stage.id},'${diff}')" ${noStamina ? 'disabled' : ''}
+        style="flex:1;border:1.5px solid ${dc.color};border-radius:10px;background:${stars>0?dc.bg:'white'};
+        padding:7px 4px;cursor:pointer;font-family:inherit;transition:all 0.15s;
+        ${noStamina?'opacity:0.4;cursor:not-allowed':''}">
+        <div style="font-size:13px">${dc.icon}</div>
+        <div style="font-size:10px;font-weight:800;color:${dc.color}">${dc.label}</div>
+        <div style="font-size:9px;color:#aaa">${starsStr || multi}</div>
+      </button>`;
+    }).join('')}
+  </div>`;
 }
 
 function closePanel() {}
