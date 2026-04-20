@@ -22,16 +22,29 @@ export function initMap() {
       alert('战斗模块加载中，请稍后重试');
     }
   };
-  window._sweepStage = (id, difficulty = 'normal') => {
-    const clears = gameState.getDailyClears(id, difficulty);
-    if (clears >= 2) { showSweepToast('今日扫荡奖励已结束'); return; }
+  window._sweepStage = (id, difficulty = 'normal', times = 1) => {
+    const stamina = gameState.stamina;
+    if (stamina <= 0) { showSweepToast('❤️ 体力不足'); return; }
+    const actualTimes = Math.min(times, stamina);
     const base = difficulty === 'legend' ? 3 : difficulty === 'elite' ? 2 : 1;
-    const reward = clears === 0 ? base : Math.floor(base / 2);
-    gameState._recordDailyClear(id, difficulty);
+    let totalReward = 0;
+    for (let i = 0; i < actualTimes; i++) {
+      gameState.spendStamina();
+      const clears = gameState.getDailyClears(id, difficulty);
+      const reward = clears === 0 ? base : clears === 1 ? Math.floor(base / 2) : 0;
+      gameState._recordDailyClear(id, difficulty);
+      if (reward > 0) { gameState.data.quizCoins += reward; totalReward += reward; }
+    }
     gameState.save();
-    if (reward > 0) gameState.addQuizCoins(reward);
-    showSweepToast(`扫荡成功！获得 +${reward} 🎫答题积分`);
+    gameState.emit('coins-changed');
+    showSweepToast(`扫荡×${actualTimes}！获得 +${totalReward} 🎫答题积分`);
     refresh();
+  };
+  window._setSweepTimes = (key, delta) => {
+    const el = document.getElementById(`sweep-n-${key}`);
+    if (!el) return;
+    const max = Math.min(10, gameState.stamina);
+    el.value = Math.max(1, Math.min(max, Number(el.value) + delta));
   };
 }
 
@@ -132,21 +145,36 @@ function difficultyButtons(stage) {
       const starsStr = stars > 0 ? '⭐'.repeat(stars) : '';
       const canSweep = stars >= 3;
       const swept = dailyClears >= 2;
-      const sweepBtn = canSweep ? `<button onclick="event.stopPropagation();window._sweepStage(${stage.id},'${diff}')"
-        style="display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:20px;
-        border:1.5px solid ${swept?'#bbb':'#9c27b0'};background:${swept?'#f5f5f5':'#f3e5f5'};
-        cursor:${swept?'not-allowed':'pointer'};font-family:inherit;font-size:11px;font-weight:700;
-        color:${swept?'#bbb':'#9c27b0'};transition:all 0.15s" ${swept?'disabled':''}>
-        ⚡扫荡
-      </button>` : '';
-      return `<div style="display:inline-flex;align-items:center;gap:4px">
+      const sweepKey = `${stage.id}_${diff}`;
+      const maxSweep = Math.min(10, gameState.stamina);
+      const sweepSection = canSweep ? `
+        <div style="display:inline-flex;align-items:center;gap:3px;margin-left:4px">
+          <button onclick="event.stopPropagation();window._setSweepTimes('${sweepKey}',-1)"
+            style="width:20px;height:20px;border-radius:50%;border:1px solid #ce93d8;background:#f3e5f5;
+            color:#9c27b0;font-size:13px;line-height:1;cursor:pointer;padding:0;font-weight:700" ${swept||maxSweep<1?'disabled':''}>−</button>
+          <input id="sweep-n-${sweepKey}" type="number" value="1" min="1" max="${maxSweep}"
+            onclick="event.stopPropagation()"
+            style="width:28px;text-align:center;border:1px solid #ce93d8;border-radius:8px;
+            font-size:11px;font-weight:700;color:#9c27b0;padding:2px 0;background:#f3e5f5" ${swept||maxSweep<1?'disabled':''}>
+          <button onclick="event.stopPropagation();window._setSweepTimes('${sweepKey}',1)"
+            style="width:20px;height:20px;border-radius:50%;border:1px solid #ce93d8;background:#f3e5f5;
+            color:#9c27b0;font-size:13px;line-height:1;cursor:pointer;padding:0;font-weight:700" ${swept||maxSweep<1?'disabled':''}>＋</button>
+          <button onclick="event.stopPropagation();window._sweepStage(${stage.id},'${diff}',Number(document.getElementById('sweep-n-${sweepKey}')?.value||1))"
+            style="display:inline-flex;align-items:center;gap:2px;padding:3px 9px;border-radius:20px;
+            border:1.5px solid ${swept?'#bbb':'#9c27b0'};background:${swept?'#f5f5f5':'#f3e5f5'};
+            cursor:${swept||maxSweep<1?'not-allowed':'pointer'};font-family:inherit;font-size:11px;
+            font-weight:700;color:${swept?'#bbb':'#9c27b0'}" ${swept||maxSweep<1?'disabled':''}>
+            ⚡扫荡
+          </button>
+        </div>` : '';
+      return `<div style="display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap">
         <button onclick="window._goStage(${stage.id},'${diff}')" ${noStamina ? 'disabled' : ''}
           style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;
           border:1.5px solid ${dc.color};background:${stars>0?dc.bg:'#fff'};
           cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;color:${dc.color};
           transition:all 0.15s;${noStamina?'opacity:0.4;cursor:not-allowed':''}">
           <span>${dc.icon}</span><span>${dc.label}</span>${starsStr ? `<span style="font-size:9px">${starsStr}</span>` : ''}${rewardHint ? `<span style="font-size:9px;opacity:0.7">${rewardHint}</span>` : ''}
-        </button>${sweepBtn}
+        </button>${sweepSection}
       </div>`;
     }).join('')}
   </div>`;
