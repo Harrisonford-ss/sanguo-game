@@ -279,6 +279,23 @@ class GameState {
     return false;
   }
 
+  // 每日通关次数 key：日期_关卡_难度
+  _dailyClearKey(stageId, difficulty = 'normal') {
+    const today = new Date().toISOString().slice(0, 10);
+    return `${today}_${stageId}_${difficulty}`;
+  }
+
+  getDailyClears(stageId, difficulty = 'normal') {
+    if (!this.data.dailyClears) this.data.dailyClears = {};
+    return this.data.dailyClears[this._dailyClearKey(stageId, difficulty)] || 0;
+  }
+
+  _recordDailyClear(stageId, difficulty = 'normal') {
+    if (!this.data.dailyClears) this.data.dailyClears = {};
+    const k = this._dailyClearKey(stageId, difficulty);
+    this.data.dailyClears[k] = (this.data.dailyClears[k] || 0) + 1;
+  }
+
   // 完成关卡，返回本次获得的星和答题积分
   completeStage(stageId, stars, difficulty = 'normal') {
     const key = this._stageKey(stageId, difficulty);
@@ -297,17 +314,25 @@ class GameState {
       this.data.currentStage = stageId + 1;
     }
 
-    // 奖励倍率：普通×1 精英×2 传说×3
-    const multi = difficulty === 'legend' ? 3 : difficulty === 'elite' ? 2 : 1;
-    const quizReward = stars * multi;
-    this.data.quizCoins += quizReward;
+    // 每日通关次数决定奖励：首次=满，第二次=半，第三次+=0
+    const clearCount = this.getDailyClears(stageId, difficulty);
+    this._recordDailyClear(stageId, difficulty);
+
+    // 基础奖励：普通1 精英2 传说3（reduced）
+    const base = difficulty === 'legend' ? 3 : difficulty === 'elite' ? 2 : 1;
+    let quizReward = 0;
+    if (clearCount === 0) quizReward = base;
+    else if (clearCount === 1) quizReward = Math.floor(base / 2);
+    // clearCount >= 2: reward = 0
+
+    if (quizReward > 0) this.data.quizCoins += quizReward;
 
     this.save();
     this.emit('coins-changed');
     this.emit('stage-changed');
     this.emit('stats-changed');
 
-    return { starsGained, quizReward };
+    return { starsGained, quizReward, clearCount };
   }
 
   // ===== 答题 =====

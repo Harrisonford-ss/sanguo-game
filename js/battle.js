@@ -538,11 +538,16 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
   let reward = '';
   if (won) {
     const stars = surviving;
-    const { starsGained, quizReward } = gameState.completeStage(stage.id, stars, difficulty);
+    const { starsGained, quizReward, clearCount } = gameState.completeStage(stage.id, stars, difficulty);
+    const rewardNote = clearCount === 1 ? '<span style="font-size:11px;color:#aaa">（今日再通关奖励减半）</span>'
+                     : clearCount >= 2  ? '<span style="font-size:11px;color:#aaa">（今日奖励已领完）</span>' : '';
+    const rewardLine = quizReward > 0
+      ? `<p style="color:var(--gold);font-weight:700;font-size:16px">+${quizReward} 🎫答题积分</p>${rewardNote}`
+      : `<p style="color:#aaa;font-size:13px">今日积分奖励已结束</p>`;
     reward = `
       <div style="margin:8px 0">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
       <div style="display:inline-block;background:${dc.color};color:white;font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px;margin-bottom:6px">${dc.icon} ${dc.label}</div>
-      <p style="color:var(--gold);font-weight:700;font-size:16px">+${quizReward} 🎫答题积分</p>`;
+      ${rewardLine}`;
     if (window.effects) window.effects.flashPulse('rgba(245,166,35,0.4)');
     // 关卡通关后同步到云端
     if (window.authModule?.syncToCloud) {

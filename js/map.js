@@ -95,29 +95,28 @@ function renderStageCard(stage, currentStage, totalStars) {
 
 function difficultyButtons(stage) {
   const noStamina = gameState.stamina <= 0;
-  return `<div style="display:flex;gap:6px;margin-top:10px">
+  return `<div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
     ${['normal','elite','legend'].map(diff => {
       const dc = DIFF_CONFIG[diff];
       const unlocked = gameState.isDifficultyUnlocked(stage.id, diff);
       const stars = gameState.getStageStars(stage.id, diff);
-      const starsStr = stars > 0 ? '⭐'.repeat(stars) : '';
-      const multi = diff === 'legend' ? '×3' : diff === 'elite' ? '×2' : '×1';
+      const dailyClears = gameState.getDailyClears(stage.id, diff);
+      const rewardHint = dailyClears === 0 ? '' : dailyClears === 1 ? '½' : '✗';
 
       if (!unlocked) {
-        const need = diff === 'elite' ? '通关普通' : '通关精英';
-        return `<div style="flex:1;border-radius:10px;border:1.5px solid #eee;background:#fafafa;padding:7px 4px;text-align:center;opacity:0.5">
-          <div style="font-size:14px">🔒</div>
-          <div style="font-size:9px;color:#aaa;margin-top:2px">${need}</div>
-        </div>`;
+        const need = diff === 'elite' ? '需通普通' : '需通精英';
+        return `<span style="display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;border:1px solid #e0e0e0;background:#f5f5f5;opacity:0.55;font-size:11px;color:#bbb">
+          🔒 ${need}
+        </span>`;
       }
 
+      const starsStr = stars > 0 ? '⭐'.repeat(stars) : '';
       return `<button onclick="window._goStage(${stage.id},'${diff}')" ${noStamina ? 'disabled' : ''}
-        style="flex:1;border:1.5px solid ${dc.color};border-radius:10px;background:${stars>0?dc.bg:'white'};
-        padding:7px 4px;cursor:pointer;font-family:inherit;transition:all 0.15s;
-        ${noStamina?'opacity:0.4;cursor:not-allowed':''}">
-        <div style="font-size:13px">${dc.icon}</div>
-        <div style="font-size:10px;font-weight:800;color:${dc.color}">${dc.label}</div>
-        <div style="font-size:9px;color:#aaa">${starsStr || multi}</div>
+        style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;
+        border:1.5px solid ${dc.color};background:${stars>0?dc.bg:'#fff'};
+        cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;color:${dc.color};
+        transition:all 0.15s;${noStamina?'opacity:0.4;cursor:not-allowed':''}">
+        <span>${dc.icon}</span><span>${dc.label}</span>${starsStr ? `<span style="font-size:9px">${starsStr}</span>` : ''}${rewardHint ? `<span style="font-size:9px;opacity:0.7">${rewardHint}</span>` : ''}
       </button>`;
     }).join('')}
   </div>`;
