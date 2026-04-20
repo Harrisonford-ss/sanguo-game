@@ -140,7 +140,6 @@ export async function saveGameToCloud(gameData, power) {
     power: power,
     card_count: Object.keys(gameData.ownedCards || {}).length,
     win_count: gameData.battleWins || 0,
-    dungeon_floor: gameData.dungeonMaxFloor || 0,
     updated_at: new Date().toISOString()
   });
 }
@@ -156,8 +155,22 @@ export async function getLeaderboard(limit = 50) {
   return query('sanguo_leaderboard', `order=power.desc&limit=${limit}`);
 }
 
-export async function getFloorLeaderboard(limit = 50) {
-  return query('sanguo_leaderboard', `order=dungeon_floor.desc&limit=${limit}`);
+export async function getFloorLeaderboard(limit = 30) {
+  // 从存档表读 dungeonMaxFloor，从排行榜读昵称/头像，客户端合并
+  const [saves, lb] = await Promise.all([
+    query('sanguo_saves', `select=user_id,game_data&limit=200`),
+    query('sanguo_leaderboard', `select=user_id,nickname,avatar,card_count,win_count&limit=200`)
+  ]);
+  const lbMap = Object.fromEntries(lb.map(r => [r.user_id, r]));
+  return saves
+    .map(s => {
+      const floor = s.game_data?.dungeonMaxFloor || 0;
+      const info  = lbMap[s.user_id] || {};
+      return { user_id: s.user_id, dungeon_floor: floor, ...info };
+    })
+    .filter(r => r.dungeon_floor > 0)
+    .sort((a, b) => b.dungeon_floor - a.dungeon_floor)
+    .slice(0, limit);
 }
 
 // ===== 擂台 =====
