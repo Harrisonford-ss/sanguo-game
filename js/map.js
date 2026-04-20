@@ -22,6 +22,25 @@ export function initMap() {
       alert('战斗模块加载中，请稍后重试');
     }
   };
+  window._sweepStage = (id, difficulty = 'normal') => {
+    const clears = gameState.getDailyClears(id, difficulty);
+    if (clears >= 2) { showSweepToast('今日扫荡奖励已结束'); return; }
+    const base = difficulty === 'legend' ? 3 : difficulty === 'elite' ? 2 : 1;
+    const reward = clears === 0 ? base : Math.floor(base / 2);
+    gameState._recordDailyClear(id, difficulty);
+    gameState.save();
+    if (reward > 0) gameState.addQuizCoins(reward);
+    showSweepToast(`扫荡成功！获得 +${reward} 🎫答题积分`);
+    refresh();
+  };
+}
+
+function showSweepToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:9999;pointer-events:none;opacity:1;transition:opacity 0.4s';
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 1800);
 }
 
 function refresh() {
@@ -111,13 +130,24 @@ function difficultyButtons(stage) {
       }
 
       const starsStr = stars > 0 ? '⭐'.repeat(stars) : '';
-      return `<button onclick="window._goStage(${stage.id},'${diff}')" ${noStamina ? 'disabled' : ''}
-        style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;
-        border:1.5px solid ${dc.color};background:${stars>0?dc.bg:'#fff'};
-        cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;color:${dc.color};
-        transition:all 0.15s;${noStamina?'opacity:0.4;cursor:not-allowed':''}">
-        <span>${dc.icon}</span><span>${dc.label}</span>${starsStr ? `<span style="font-size:9px">${starsStr}</span>` : ''}${rewardHint ? `<span style="font-size:9px;opacity:0.7">${rewardHint}</span>` : ''}
-      </button>`;
+      const canSweep = stars >= 3;
+      const swept = dailyClears >= 2;
+      const sweepBtn = canSweep ? `<button onclick="event.stopPropagation();window._sweepStage(${stage.id},'${diff}')"
+        style="display:inline-flex;align-items:center;gap:3px;padding:4px 9px;border-radius:20px;
+        border:1.5px solid ${swept?'#bbb':'#9c27b0'};background:${swept?'#f5f5f5':'#f3e5f5'};
+        cursor:${swept?'not-allowed':'pointer'};font-family:inherit;font-size:11px;font-weight:700;
+        color:${swept?'#bbb':'#9c27b0'};transition:all 0.15s" ${swept?'disabled':''}>
+        ⚡扫荡
+      </button>` : '';
+      return `<div style="display:inline-flex;align-items:center;gap:4px">
+        <button onclick="window._goStage(${stage.id},'${diff}')" ${noStamina ? 'disabled' : ''}
+          style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;
+          border:1.5px solid ${dc.color};background:${stars>0?dc.bg:'#fff'};
+          cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;color:${dc.color};
+          transition:all 0.15s;${noStamina?'opacity:0.4;cursor:not-allowed':''}">
+          <span>${dc.icon}</span><span>${dc.label}</span>${starsStr ? `<span style="font-size:9px">${starsStr}</span>` : ''}${rewardHint ? `<span style="font-size:9px;opacity:0.7">${rewardHint}</span>` : ''}
+        </button>${sweepBtn}
+      </div>`;
     }).join('')}
   </div>`;
 }
