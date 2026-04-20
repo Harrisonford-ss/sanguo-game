@@ -44,10 +44,11 @@ export function showDetail() {
   const fillPct = sp / max * 100;
   const color = sp <= 3 ? '#ef5350' : sp <= 6 ? '#ff9800' : '#4caf50';
 
-  // 计算满体力时间
+  const REGEN_MS = 10 * 60 * 1000;
+  // 计算满体力时间：下次恢复剩余时间 + 剩余点数对应的恢复时间
   let fullTimeStr = '';
   if (!full) {
-    const msToFull = msLeft + (max - sp - 1) * gameState.constructor.STAMINA_REGEN_MS;
+    const msToFull = msLeft + (max - sp - 1) * REGEN_MS;
     const fullAt = new Date(Date.now() + msToFull);
     fullTimeStr = fullAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
   }
