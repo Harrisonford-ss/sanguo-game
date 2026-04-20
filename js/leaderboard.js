@@ -1,12 +1,13 @@
 // 三国志探险 - 排行榜 + 擂台
 
-import { getLeaderboard, getArenaOpponents, getMyArenaTeam, setArenaTeam, recordArenaResult, getArenaLog, isLoggedIn, getUser } from './supabase.js';
+import { getLeaderboard, getFloorLeaderboard, getArenaOpponents, getMyArenaTeam, setArenaTeam, recordArenaResult, getArenaLog, isLoggedIn, getUser } from './supabase.js';
 import { gameState } from './state.js';
 import { getCharacter } from '../data/characters.js';
 import { avatarHTML } from './avatars.js';
 import { calcStats } from './battle.js';
 
 let currentTab = 'rank'; // 'rank' | 'arena' | 'log'
+let rankSubTab = 'power'; // 'power' | 'floor'
 
 export function initLeaderboard() {
   window.lbModule = { refresh };
@@ -35,6 +36,7 @@ async function refresh() {
     <div id="lb-content" style="padding:0 4px"></div>`;
 
   window.lbModule._tab = (t) => { currentTab = t; refresh(); };
+  window.lbModule._rankSub = (t) => { rankSubTab = t; refresh(); };
 
   const content = document.getElementById('lb-content');
   if (currentTab === 'rank') await renderRank(content);
@@ -44,35 +46,78 @@ async function refresh() {
 
 // ===== 排行榜 =====
 async function renderRank(el) {
-  el.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px">加载中...</div>';
-  try {
-    const list = await getLeaderboard(30);
-    const me = getUser();
+  const isPower = rankSubTab === 'power';
 
-    if (list.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--text-light);padding:20px">暂无排行数据，多多游戏提升战力吧！</div>';
+  // 二级切换
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button onclick="window.lbModule._rankSub('power')" style="
+        flex:1;padding:8px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+        background:${isPower ? 'linear-gradient(135deg,#f5a623,#ff9800)' : 'var(--bg-card)'};
+        color:${isPower ? 'white' : 'var(--text-light)'};
+        box-shadow:${isPower ? '0 3px 10px rgba(245,166,35,0.35)' : 'var(--shadow)'}">
+        ⚔️ 战力榜
+      </button>
+      <button onclick="window.lbModule._rankSub('floor')" style="
+        flex:1;padding:8px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+        background:${!isPower ? 'linear-gradient(135deg,#4caf50,#388e3c)' : 'var(--bg-card)'};
+        color:${!isPower ? 'white' : 'var(--text-light)'};
+        box-shadow:${!isPower ? '0 3px 10px rgba(76,175,80,0.35)' : 'var(--shadow)'}">
+        🗺️ 探险榜
+      </button>
+    </div>
+    <div id="rank-list"><div style="text-align:center;color:var(--text-light);padding:20px">加载中...</div></div>`;
+
+  try {
+    const list = isPower ? await getLeaderboard(30) : await getFloorLeaderboard(30);
+    const me = getUser();
+    const listEl = document.getElementById('rank-list');
+    if (!listEl) return;
+
+    const filtered = isPower ? list : list.filter(r => r.dungeon_floor > 0);
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center;color:var(--text-light);padding:20px">
+        ${isPower ? '暂无战力数据，多多游戏提升战力吧！' : '暂无探险记录，快去探险创造纪录吧！'}
+      </div>`;
       return;
     }
 
-    el.innerHTML = list.map((row, i) => {
+    listEl.innerHTML = filtered.map((row, i) => {
       const isMe = row.user_id === me?.id;
-      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;margin-bottom:4px;
-        ${isMe ? 'background:linear-gradient(135deg,#4caf5015,#4caf5025);border:1.5px solid #4caf50' : 'background:var(--bg-card)'}">
-        <span style="width:28px;text-align:center;font-size:${i<3?'18px':'13px'};font-weight:700">${medal}</span>
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span style="font-size:12px">${i+1}</span>`;
+
+      const valueColor = isPower ? '#f5a623' : '#4caf50';
+      const value = isPower ? (row.power || 0) : (row.dungeon_floor || 0);
+      const unit = isPower ? '战力' : '层';
+      const sub = isPower
+        ? `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`
+        : row.dungeon_floor_at
+          ? `达成于 ${new Date(row.dungeon_floor_at).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})}`
+          : '暂无记录';
+
+      return `<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:10px;margin-bottom:5px;
+        ${isMe
+          ? 'background:linear-gradient(135deg,#4caf5012,#4caf5022);border:1.5px solid #4caf5066'
+          : 'background:var(--bg-card);border:1.5px solid transparent'};
+        box-shadow:var(--shadow)">
+        <span style="width:26px;text-align:center;font-size:${i<3?'18':'13'}px;font-weight:700;flex-shrink:0">${medal}</span>
         ${avatarHTML(row.avatar || 'liubei', 36)}
         <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;${isMe?'color:#4caf50':''}">${row.nickname}${isMe?' (我)':''}</div>
-          <div style="font-size:10px;color:var(--text-light)">🃏${row.card_count} ⚔️${row.win_count}胜</div>
+          <div style="font-size:13px;font-weight:700;${isMe?'color:#4caf50':''};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+            ${row.nickname}${isMe?' <span style="font-size:10px;background:#4caf5020;color:#4caf50;padding:1px 5px;border-radius:4px">我</span>':''}
+          </div>
+          <div style="font-size:10px;color:var(--text-light);margin-top:1px">${sub}</div>
         </div>
-        <div style="text-align:right">
-          <div style="font-size:15px;font-weight:800;color:#f5a623">${row.power}</div>
-          <div style="font-size:9px;color:var(--text-light)">战力</div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:17px;font-weight:800;color:${valueColor};line-height:1">${value}</div>
+          <div style="font-size:9px;color:var(--text-light)">${unit}</div>
         </div>
       </div>`;
     }).join('');
   } catch(e) {
-    el.innerHTML = `<div style="color:#ef5350;padding:20px;text-align:center">加载失败: ${e.message}</div>`;
+    const listEl = document.getElementById('rank-list');
+    if (listEl) listEl.innerHTML = `<div style="color:#ef5350;padding:20px;text-align:center">加载失败: ${e.message}</div>`;
   }
 }
 

@@ -155,6 +155,20 @@ export async function getLeaderboard(limit = 50) {
   return query('sanguo_leaderboard', `order=power.desc&limit=${limit}`);
 }
 
+export async function getFloorLeaderboard(limit = 50) {
+  return query('sanguo_leaderboard', `order=dungeon_floor.desc&limit=${limit}`);
+}
+
+export async function syncDungeonFloor(floor) {
+  if (!currentUser) return;
+  await patchOrInsert('sanguo_leaderboard', 'user_id', currentUser.id, {
+    nickname: currentUser.nickname,
+    avatar: currentUser.avatar || 'liubei',
+    dungeon_floor: floor,
+    dungeon_floor_at: new Date().toISOString()
+  });
+}
+
 // ===== 擂台 =====
 export async function setArenaTeam(team, power) {
   if (!currentUser) return;
