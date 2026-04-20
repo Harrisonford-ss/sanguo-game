@@ -52,8 +52,31 @@ export function initMap() {
   window._sweepAdjust = (delta) => {
     const el = document.getElementById('sweep-count-input');
     if (!el) return;
-    const max = Math.min(10, gameState.stamina);
-    el.value = Math.max(1, Math.min(max, Number(el.value) + delta));
+    el.value = Math.max(1, Math.min(10, Number(el.value) + delta));
+    window._sweepInputChanged();
+  };
+
+  window._sweepInputChanged = () => {
+    const el = document.getElementById('sweep-count-input');
+    const hint = document.getElementById('sweep-stamina-hint');
+    const btn = document.getElementById('sweep-confirm-btn');
+    if (!el || !hint || !btn) return;
+    const n = Math.max(1, Math.min(10, Number(el.value) || 1));
+    el.value = n;
+    const stamina = gameState.stamina;
+    const over = n > stamina;
+    hint.textContent = over ? `❤️ 体力不足（当前${stamina}）` : `消耗 ${n} ❤️`;
+    hint.style.color = over ? '#ef5350' : '#aaa';
+    btn.disabled = over;
+    btn.style.background = over ? '#e0e0e0' : '#9c27b0';
+    btn.style.cursor = over ? 'not-allowed' : 'pointer';
+  };
+
+  window._confirmSweep = (id, difficulty) => {
+    const el = document.getElementById('sweep-count-input');
+    const n = Math.max(1, Math.min(10, Number(el?.value) || 1));
+    if (n > gameState.stamina) { showToast('❤️ 体力不足，无法扫荡'); return; }
+    window._sweepStage(id, difficulty, n);
   };
 }
 
@@ -63,68 +86,61 @@ function showStagePopup(stage, difficulty) {
   const stars = gameState.getStageStars(stage.id, difficulty);
   const canSweep = stars >= 3;
   const dailyClears = gameState.getDailyClears(stage.id, difficulty);
-  const noStamina = gameState.stamina <= 0;
-  const maxSweep = Math.min(10, gameState.stamina);
+  const stamina = gameState.stamina;
+  const noStamina = stamina <= 0;
   const swept = dailyClears >= 2;
-
-  const sweepRewardText = dailyClears === 0
-    ? `首次扫荡：全额奖励`
-    : dailyClears === 1 ? `再次扫荡：奖励减半` : `今日奖励已领完`;
+  const sweepNote = dailyClears === 0 ? '首次全额' : dailyClears === 1 ? '再次减半' : '今日已结束';
 
   const overlay = document.createElement('div');
   overlay.id = 'stage-popup-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center';
   overlay.onclick = (e) => { if (e.target === overlay) closeStagePopup(); };
 
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px 20px 32px;box-shadow:0 -4px 24px rgba(0,0,0,0.15)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div>
-          <span style="display:inline-block;background:${dc.color};color:#fff;font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px;margin-right:6px">${dc.icon} ${dc.label}</span>
-          <span style="font-size:16px;font-weight:800;color:#333">${stage.name}</span>
+    <div style="background:#fff;border-radius:16px;width:88%;max-width:360px;padding:16px 16px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="background:${dc.color};color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px">${dc.icon} ${dc.label}</span>
+          <span style="font-size:14px;font-weight:800;color:#333">${stage.name}</span>
         </div>
-        <button onclick="closeStagePopup()" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer;line-height:1">✕</button>
+        <button onclick="closeStagePopup()" style="background:none;border:none;font-size:16px;color:#bbb;cursor:pointer;padding:0;line-height:1">✕</button>
       </div>
-      <div style="display:flex;gap:10px">
+      <div style="display:flex;gap:8px;align-items:stretch">
         <!-- 进入战斗 -->
         <button onclick="window._startBattle(${stage.id},'${difficulty}')" ${noStamina?'disabled':''}
-          style="flex:1;padding:14px 10px;border-radius:14px;border:2px solid ${dc.color};
-          background:${noStamina?'#f5f5f5':dc.bg};cursor:${noStamina?'not-allowed':'pointer'};
-          font-family:inherit;transition:all 0.15s;${noStamina?'opacity:0.5':''}">
-          <div style="font-size:24px;margin-bottom:4px">⚔️</div>
-          <div style="font-size:14px;font-weight:800;color:${noStamina?'#bbb':dc.color}">进入战斗</div>
-          <div style="font-size:11px;color:#aaa;margin-top:2px">消耗 1 ❤️</div>
+          style="flex:1;padding:10px 6px;border-radius:12px;border:1.5px solid ${noStamina?'#e0e0e0':dc.color};
+          background:${noStamina?'#f9f9f9':dc.bg};cursor:${noStamina?'not-allowed':'pointer'};
+          font-family:inherit;text-align:center;transition:all 0.15s;${noStamina?'opacity:0.5':''}">
+          <div style="font-size:20px">⚔️</div>
+          <div style="font-size:12px;font-weight:800;color:${noStamina?'#bbb':dc.color};margin-top:3px">进入战斗</div>
+          <div style="font-size:10px;color:#aaa;margin-top:2px">消耗 1 ❤️</div>
         </button>
         <!-- 扫荡 -->
-        ${canSweep ? `
-        <div style="flex:1;padding:14px 10px;border-radius:14px;border:2px solid ${swept||maxSweep<1?'#e0e0e0':'#9c27b0'};
-          background:${swept||maxSweep<1?'#f5f5f5':'#f3e5f5'};text-align:center">
-          <div style="font-size:24px;margin-bottom:4px">⚡</div>
-          <div style="font-size:14px;font-weight:800;color:${swept||maxSweep<1?'#bbb':'#9c27b0'}">扫荡</div>
-          <div style="font-size:10px;color:${swept?'#ef5350':'#aaa'};margin-top:2px">${sweepRewardText}</div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px">
-            <button onclick="window._sweepAdjust(-1)"
-              style="width:24px;height:24px;border-radius:50%;border:1.5px solid #ce93d8;background:#fff;
-              color:#9c27b0;font-size:14px;cursor:pointer;padding:0;font-weight:700;line-height:1" ${swept||maxSweep<1?'disabled':''}>−</button>
-            <input id="sweep-count-input" type="number" value="1" min="1" max="${maxSweep}"
-              style="width:36px;text-align:center;border:1.5px solid #ce93d8;border-radius:8px;
-              font-size:13px;font-weight:700;color:#9c27b0;padding:3px 0;background:#fff" ${swept||maxSweep<1?'disabled':''}>
-            <button onclick="window._sweepAdjust(1)"
-              style="width:24px;height:24px;border-radius:50%;border:1.5px solid #ce93d8;background:#fff;
-              color:#9c27b0;font-size:14px;cursor:pointer;padding:0;font-weight:700;line-height:1" ${swept||maxSweep<1?'disabled':''}>＋</button>
+        <div style="flex:1.4;padding:10px 8px;border-radius:12px;border:1.5px solid ${canSweep&&!swept?'#9c27b0':'#e0e0e0'};
+          background:${canSweep&&!swept?'#f9f0ff':'#f9f9f9'};text-align:center;${!canSweep||swept?'opacity:0.55':''}">
+          <div style="font-size:20px">⚡</div>
+          <div style="font-size:12px;font-weight:800;color:${canSweep&&!swept?'#9c27b0':'#bbb'};margin-top:3px">扫荡</div>
+          ${canSweep ? `<div style="font-size:9px;color:${swept?'#ef5350':'#aaa'};margin-top:1px">${sweepNote}</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px">
+            <button onclick="window._sweepAdjust(-1)" ${swept?'disabled':''}
+              style="width:22px;height:22px;border-radius:50%;border:1px solid #ce93d8;background:#fff;
+              color:#9c27b0;font-size:14px;cursor:pointer;padding:0;font-weight:700;line-height:1">−</button>
+            <input id="sweep-count-input" type="number" value="1" min="1" max="10"
+              oninput="window._sweepInputChanged()"
+              style="width:32px;text-align:center;border:1px solid #ce93d8;border-radius:7px;
+              font-size:12px;font-weight:700;color:#9c27b0;padding:2px 0" ${swept?'disabled':''}>
+            <button onclick="window._sweepAdjust(1)" ${swept?'disabled':''}
+              style="width:22px;height:22px;border-radius:50%;border:1px solid #ce93d8;background:#fff;
+              color:#9c27b0;font-size:14px;cursor:pointer;padding:0;font-weight:700;line-height:1">＋</button>
           </div>
-          <button onclick="window._sweepStage(${stage.id},'${difficulty}',Number(document.getElementById('sweep-count-input')?.value||1))"
-            style="margin-top:10px;width:100%;padding:7px 0;border-radius:10px;
-            border:none;background:${swept||maxSweep<1?'#e0e0e0':'#9c27b0'};color:#fff;
-            font-family:inherit;font-size:13px;font-weight:700;cursor:${swept||maxSweep<1?'not-allowed':'pointer'}" ${swept||maxSweep<1?'disabled':''}>
+          <div id="sweep-stamina-hint" style="font-size:10px;margin-top:5px;color:#aaa">消耗 1 ❤️</div>
+          <button id="sweep-confirm-btn" onclick="window._confirmSweep(${stage.id},'${difficulty}')" ${swept?'disabled':''}
+            style="margin-top:7px;width:100%;padding:6px 0;border-radius:9px;border:none;
+            background:${swept?'#e0e0e0':'#9c27b0'};color:#fff;font-family:inherit;
+            font-size:12px;font-weight:700;cursor:${swept?'not-allowed':'pointer'}">
             确认扫荡
-          </button>
-        </div>` : `
-        <div style="flex:1;padding:14px 10px;border-radius:14px;border:2px solid #e0e0e0;background:#fafafa;text-align:center;opacity:0.6">
-          <div style="font-size:24px;margin-bottom:4px">⚡</div>
-          <div style="font-size:14px;font-weight:800;color:#bbb">扫荡</div>
-          <div style="font-size:10px;color:#ccc;margin-top:4px">三星通关后解锁</div>
-        </div>`}
+          </button>` : `<div style="font-size:9px;color:#ccc;margin-top:4px">三星通关后解锁</div>`}
+        </div>
       </div>
     </div>
   `;
