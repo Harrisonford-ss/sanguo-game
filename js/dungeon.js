@@ -113,7 +113,7 @@ function randomArmor(rarity) {
 }
 
 // ===== 每日次数 =====
-const DAILY_FREE = 5;       // 每日免费次数
+const DAILY_FREE = 3;       // 每日免费次数
 // 超出后每次消耗1答题积分（spendQuizCoin）
 
 function todayKey() {
@@ -857,79 +857,107 @@ async function doFindError() {
   });
 }
 
-// 方案C：连线配对
+// 方案C：连线配对（自由连线，全部配完后统一判断）
 async function doMatchPairs() {
   const data = MATCH_PAIRS_DATA[Math.floor(Math.random() * MATCH_PAIRS_DATA.length)];
-  // 打乱右列
   const leftItems  = data.pairs.map(p => p[0]);
   const rightItems = [...data.pairs.map(p => p[1])].sort(() => Math.random() - 0.5);
   const correctMap = Object.fromEntries(data.pairs); // left→right
-  let selected = null;   // 当前选中的左侧index
-  let matched  = {};     // leftIdx → rightIdx
+  let selected = null;  // 当前选中的左侧index（null=未选）
+  let matched  = {};    // leftIdx → rightIdx（可以是错的）
 
   function render() {
+    const allDone = Object.keys(matched).length === leftItems.length;
     popup(`
       <div style="font-size:28px">🔗</div>
       <h4 style="margin:4px 0">连线配对：${data.title}</h4>
-      <p style="font-size:11px;color:var(--text-light);margin-bottom:10px">点击左侧，再点右侧完成配对</p>
-      <div id="mp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px"></div>`);
+      <p style="font-size:11px;color:var(--text-light);margin-bottom:6px">先点左侧，再点右侧完成配对；可重新点左侧更换</p>
+      <div id="mp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-bottom:10px"></div>
+      ${allDone ? `<button id="mp-confirm" class="btn btn-primary" style="width:100%;font-size:13px">确认提交</button>` : `<div style="font-size:11px;color:#aaa;text-align:center">已配 ${Object.keys(matched).length}/${leftItems.length} 对</div>`}`);
 
     const grid = document.getElementById('mp-grid');
     if (!grid) return;
 
     leftItems.forEach((l, li) => {
       const matchedRi = matched[li] !== undefined ? matched[li] : null;
-      const isMatched  = matchedRi !== null;
-      const isSel      = selected === li && !isMatched;
+      const isPaired  = matchedRi !== null;
+      const isSel     = selected === li;
 
       const lBtn = document.createElement('button');
       lBtn.textContent = l;
       lBtn.style.cssText = `padding:9px 6px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;
-        border:2px solid ${isMatched ? '#4caf50' : isSel ? '#667eea' : '#ddd'};
-        background:${isMatched ? '#e8f5e9' : isSel ? '#ede7f6' : '#fff'};
-        color:${isMatched ? '#2e7d32' : isSel ? '#4527a0' : '#333'};transition:all 0.15s`;
-      lBtn.onclick = () => { if (!isMatched) { selected = li; render(); } };
+        border:2px solid ${isSel ? '#667eea' : isPaired ? '#42a5f5' : '#ddd'};
+        background:${isSel ? '#ede7f6' : isPaired ? '#e3f2fd' : '#fff'};
+        color:${isSel ? '#4527a0' : isPaired ? '#1565c0' : '#333'};transition:all 0.15s`;
+      lBtn.onclick = () => { selected = li; render(); };
 
       const rBtn = document.createElement('button');
+      const pairedByLeft = Object.entries(matched).find(([, ri]) => ri === li);
+      const isPairedR = pairedByLeft !== undefined;
       rBtn.textContent = rightItems[li];
       rBtn.style.cssText = `padding:9px 6px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;
-        border:2px solid ${Object.values(matched).includes(li) ? '#4caf50' : '#ddd'};
-        background:${Object.values(matched).includes(li) ? '#e8f5e9' : '#fafafa'};
-        color:${Object.values(matched).includes(li) ? '#2e7d32' : '#555'};transition:all 0.15s`;
+        border:2px solid ${isPairedR ? '#42a5f5' : '#ddd'};
+        background:${isPairedR ? '#e3f2fd' : '#fafafa'};
+        color:${isPairedR ? '#1565c0' : '#555'};transition:all 0.15s`;
       rBtn.onclick = () => {
         if (selected === null) return;
-        const ri = li; // rightItems[li]
-        if (Object.values(matched).includes(ri)) return; // 已被配对
-        const isCorrect = correctMap[leftItems[selected]] === rightItems[ri];
-        if (isCorrect) {
-          matched[selected] = ri;
-          selected = null;
-          // 全部配对完成
-          if (Object.keys(matched).length === leftItems.length) {
-            const allCorrect = Object.entries(matched).every(([li, ri]) => correctMap[leftItems[li]] === rightItems[ri]);
-            gainExp(allCorrect ? 8 : 4);
-            if (allCorrect) { coins += 3; hp = Math.min(maxHp, hp + Math.round(maxHp * 0.08)); lastQuizCorrect = true; }
-            addLog(allCorrect ? '🔗 全部配对正确！+8EXP +3💰' : '🔗 配对完成');
-            popup(`
-              <div style="font-size:32px">${allCorrect ? '🎉' : '👍'}</div>
-              <h4>${allCorrect ? '完美配对！' : '配对完成'}</h4>
-              <div style="margin:8px 0;font-size:12px;text-align:left">
-                ${data.pairs.map(([l,r]) => `<div style="padding:3px 0">✅ ${l} → ${r}</div>`).join('')}
-              </div>
-              ${allCorrect ? '<p style="color:#4caf50;font-weight:700">+8EXP +3💰 回血8%</p>' : '<p style="color:#888">+4EXP</p>'}
-              <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._dgOk()">继续</button>`);
-            window._dgOk = () => { closePopup(); resolve(); };
-          } else { render(); }
-        } else {
-          // 配对错误：闪红
-          rBtn.style.background = '#ffebee'; rBtn.style.borderColor = '#ef5350';
-          setTimeout(() => { rBtn.style.background = '#fafafa'; rBtn.style.borderColor = '#ddd'; }, 500);
-        }
+        const ri = li;
+        // 若该右侧已被别的左侧配对，先解绑
+        const existingLeft = Object.entries(matched).find(([, r]) => r === ri);
+        if (existingLeft) delete matched[existingLeft[0]];
+        matched[selected] = ri;
+        selected = null;
+        render();
       };
 
       grid.appendChild(lBtn);
       grid.appendChild(rBtn);
     });
+
+    if (allDone) {
+      document.getElementById('mp-confirm').onclick = () => finalize();
+    }
+  }
+
+  function finalize() {
+    const correctCount = Object.entries(matched).filter(([li, ri]) =>
+      correctMap[leftItems[li]] === rightItems[ri]
+    ).length;
+    const total = leftItems.length;
+    const allCorrect = correctCount === total;
+    const noneCorrect = correctCount === 0;
+
+    // 奖惩：全对=满奖，部分对=减半奖励，全错=扣血扣金
+    if (allCorrect) {
+      coins += 3; gainExp(8); hp = Math.min(maxHp, hp + Math.round(maxHp * 0.08));
+      lastQuizCorrect = true;
+      addLog(`🔗 连线全对！+3💰 +8EXP 回血8%`);
+    } else if (!noneCorrect) {
+      gainExp(correctCount * 2);
+      addLog(`🔗 连线${correctCount}/${total}正确 +${correctCount*2}EXP`);
+    } else {
+      hp = Math.max(1, hp - Math.round(maxHp * 0.1));
+      addLog(`🔗 连线全错！扣血10%`);
+    }
+
+    popup(`
+      <div style="font-size:32px">${allCorrect ? '🎉' : noneCorrect ? '💔' : '📊'}</div>
+      <h4 style="margin:4px 0">${allCorrect ? '完美配对！' : noneCorrect ? '全部错误' : `答对 ${correctCount}/${total}`}</h4>
+      <div style="margin:8px 0;font-size:12px;text-align:left">
+        ${leftItems.map((l, li) => {
+          const ri = matched[li];
+          const userAns = rightItems[ri];
+          const ok = correctMap[l] === userAns;
+          return `<div style="padding:3px 0;color:${ok?'#2e7d32':'#c62828'}">
+            ${ok?'✅':'❌'} ${l} → ${userAns}${ok?'':` <span style="color:#888;font-size:10px">（正确：${correctMap[l]}）</span>`}
+          </div>`;
+        }).join('')}
+      </div>
+      <p style="font-weight:700;color:${allCorrect?'#4caf50':noneCorrect?'#ef5350':'#ff9800'}">
+        ${allCorrect ? '+3💰 +8EXP 回血8%' : noneCorrect ? '扣血10%' : `+${correctCount*2}EXP`}
+      </p>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._dgOk()">继续</button>`);
+    window._dgOk = () => { closePopup(); resolve(); };
   }
 
   return new Promise(resolve => { render(); });
@@ -1260,7 +1288,7 @@ async function doBoss() {
           <!-- 标题 + 速度 -->
           <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px">
             <span style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:700">👹 第${floor}层 BOSS战</span>
-            <button id="bg-speed-btn" onclick="window._dgToggleSpeed()" style="padding:6px 14px;border:none;border-radius:10px;background:rgba(255,255,255,0.15);color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">▶️ 1x</button>
+            <button id="bg-speed-btn" onclick="window._dgToggleSpeed()" style="padding:6px 14px;border:none;border-radius:10px;background:rgba(255,255,255,0.15);color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">${_bossSpeed===2?'⏩ 2x':'▶️ 1x'}</button>
           </div>
           <!-- BOSS（上方）-->
           <div style="display:flex;justify-content:space-around;align-items:flex-end;padding:0 4px">
@@ -1279,11 +1307,10 @@ async function doBoss() {
         </div>
       </div>`;
 
-    // 速度切换
-    let _bossSpeed = 1;
-    window._dgToggleSpeed = () => {
-      _bossSpeed = _bossSpeed === 1 ? 2 : 1;
-      window._battleSpeed = _bossSpeed;
+    // 速度切换（读取上次设置）
+    let _bossSpeed = Number(localStorage.getItem('dungeon-boss-speed')) || 1;
+    window._battleSpeed = _bossSpeed;
+    const _applySpeedBtn = () => {
       const btn = document.getElementById('bg-speed-btn');
       if (btn) {
         btn.textContent = _bossSpeed === 2 ? '⏩ 2x' : '▶️ 1x';
@@ -1291,6 +1318,13 @@ async function doBoss() {
         btn.style.color = _bossSpeed === 2 ? '#333' : 'white';
       }
     };
+    window._dgToggleSpeed = () => {
+      _bossSpeed = _bossSpeed === 1 ? 2 : 1;
+      window._battleSpeed = _bossSpeed;
+      localStorage.setItem('dungeon-boss-speed', _bossSpeed);
+      _applySpeedBtn();
+    };
+    setTimeout(_applySpeedBtn, 0); // 渲染后同步按钮样式
 
     function bLog(html) {
       const el = document.getElementById('bg-log'); if (!el) return;
