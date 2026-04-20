@@ -3,1738 +3,837 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>我做了一款三国游戏 — 一个12岁孩子的AI开发故事</title>
+<title>我做了一款三国游戏 · 一个12岁孩子的AI开发故事</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Space+Grotesk:wght@400;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ============================================
-   MANDATORY VIEWPORT BASE
-   ============================================ */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#000}
+html{scroll-snap-type:y mandatory;scroll-behavior:smooth}
 
-html, body { height: 100%; overflow-x: hidden; }
-
-html {
-  scroll-snap-type: y mandatory;
-  scroll-behavior: smooth;
+.slide{
+  width:100vw;height:100vh;height:100dvh;
+  overflow:hidden;scroll-snap-align:start;
+  display:flex;flex-direction:column;position:relative;
 }
 
-.slide {
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  position: relative;
+:root{
+  --gold:#c9a227;--gold2:#f0c84a;--gold3:#7a5c00;
+  --red:#c0392b;--red2:#e74c3c;
+  --jade:#2ecc8f;--sky:#3498db;
+  --ink:#08080f;--ink2:#12121e;
+  --paper:#f5efe0;
+  --wei:#4a90d9;--shu:#4caf50;--wu:#ef5350;
+  --ts:clamp(2rem,6vw,5rem);
+  --h2:clamp(1.4rem,3.5vw,2.8rem);
+  --h3:clamp(1rem,2.2vw,1.7rem);
+  --body:clamp(0.78rem,1.35vw,1.05rem);
+  --sm:clamp(0.62rem,0.95vw,0.82rem);
+  --pad:clamp(1.5rem,5vw,5rem);
+  --gap:clamp(0.8rem,2vw,2rem);
 }
+@media(max-height:700px){
+  :root{--ts:clamp(1.5rem,5vw,3.2rem);--h2:clamp(1.1rem,3vw,2rem);--pad:clamp(1rem,3vw,2.5rem);--gap:clamp(0.5rem,1.5vw,1.2rem)}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.2s!important}}
 
-.slide-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  max-height: 100%;
-  overflow: hidden;
-  padding: var(--slide-padding);
-}
+/* ── FONTS ── */
+.serif{font-family:'Noto Serif SC',serif}
+.mono{font-family:'Space Mono',monospace}
 
-:root {
-  --title-size: clamp(1.6rem, 5.5vw, 4.2rem);
-  --h2-size: clamp(1.2rem, 3.2vw, 2.4rem);
-  --h3-size: clamp(1rem, 2.2vw, 1.6rem);
-  --body-size: clamp(0.78rem, 1.4vw, 1.05rem);
-  --small-size: clamp(0.65rem, 1vw, 0.82rem);
-  --slide-padding: clamp(1.2rem, 5vw, 5rem);
-  --content-gap: clamp(0.6rem, 2vw, 1.8rem);
-  --element-gap: clamp(0.3rem, 1vw, 0.9rem);
+/* ── REVEAL ── */
+.r{opacity:0;transform:translateY(24px);transition:opacity .65s ease,transform .65s ease}
+.r.on{opacity:1;transform:none}
+.d1{transition-delay:.1s}.d2{transition-delay:.22s}.d3{transition-delay:.34s}
+.d4{transition-delay:.46s}.d5{transition-delay:.58s}.d6{transition-delay:.7s}
+.d7{transition-delay:.82s}.d8{transition-delay:.94s}
 
-  /* Theme palette */
-  --ink:     #0d0d14;
-  --ink2:    #1a1a2e;
-  --paper:   #f5efe0;
-  --gold:    #c9a227;
-  --gold2:   #f0c84a;
-  --red:     #c0392b;
-  --jade:    #2ecc8f;
-  --sky:     #3498db;
-  --muted:   rgba(255,255,255,0.45);
-  --dim:     rgba(255,255,255,0.15);
-}
+/* ── PROGRESS ── */
+#prog{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,var(--red),var(--gold),var(--jade));z-index:200;transition:width .4s ease}
 
-@media (max-height: 700px) {
-  :root {
-    --slide-padding: clamp(0.8rem, 3vw, 2rem);
-    --content-gap: clamp(0.4rem, 1.5vw, 1rem);
-    --title-size: clamp(1.3rem, 4.5vw, 2.6rem);
-    --h2-size: clamp(1rem, 3vw, 1.8rem);
-  }
-}
-@media (max-height: 600px) {
-  :root {
-    --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
-    --title-size: clamp(1.1rem, 4vw, 2rem);
-    --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
-  }
-  .nav-dots, .keyboard-hint { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
-  html { scroll-behavior: auto; }
-}
+/* ── NAV DOTS ── */
+#dots{position:fixed;right:clamp(8px,1.5vw,18px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:200}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.18);border:none;cursor:pointer;transition:all .3s;padding:0}
+.dot.on{background:var(--gold);transform:scale(1.6)}
 
-/* ============================================
-   TYPOGRAPHY
-   ============================================ */
-body { font-family: 'Space Grotesk', 'Noto Serif SC', sans-serif; background: var(--ink); }
+/* ── CORNER ORNAMENT ── */
+.orn{position:absolute;width:clamp(32px,5vw,60px);height:clamp(32px,5vw,60px);opacity:.22;pointer-events:none}
+.orn.tl{top:clamp(10px,2vw,22px);left:clamp(10px,2vw,22px);border-top:1.5px solid var(--gold);border-left:1.5px solid var(--gold)}
+.orn.tr{top:clamp(10px,2vw,22px);right:clamp(10px,2vw,22px);border-top:1.5px solid var(--gold);border-right:1.5px solid var(--gold)}
+.orn.bl{bottom:clamp(10px,2vw,22px);left:clamp(10px,2vw,22px);border-bottom:1.5px solid var(--gold);border-left:1.5px solid var(--gold)}
+.orn.br{bottom:clamp(10px,2vw,22px);right:clamp(10px,2vw,22px);border-bottom:1.5px solid var(--gold);border-right:1.5px solid var(--gold)}
 
-.serif { font-family: 'Noto Serif SC', serif; }
-.mono  { font-family: 'Space Mono', monospace; }
+/* ── SLIDE NUMBER ── */
+.sn{position:absolute;bottom:clamp(12px,2vh,22px);right:clamp(16px,3vw,36px);font-family:'Space Mono',monospace;font-size:var(--sm);color:rgba(255,255,255,0.22);letter-spacing:2px}
 
-/* ============================================
-   SHARED DECORATIVE
-   ============================================ */
-.slide::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(circle at 15% 85%, rgba(201,162,39,0.06) 0%, transparent 50%),
-    radial-gradient(circle at 85% 15%, rgba(192,57,43,0.06) 0%, transparent 50%);
-  pointer-events: none;
-}
+/* ── TAG ── */
+.tag{display:inline-block;font-size:var(--sm);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 11px;border-radius:4px;border:1px solid currentColor}
+.tg{color:var(--gold);border-color:var(--gold)}
+.tr{color:var(--red2);border-color:var(--red2)}
+.tj{color:var(--jade);border-color:var(--jade)}
+.ts{color:var(--sky);border-color:var(--sky)}
 
-.corner-decor {
-  position: absolute;
-  width: clamp(40px, 6vw, 80px);
-  height: clamp(40px, 6vw, 80px);
-  opacity: 0.25;
-}
-.corner-decor.tl { top: clamp(10px,2vw,24px); left: clamp(10px,2vw,24px); border-top: 2px solid var(--gold); border-left: 2px solid var(--gold); }
-.corner-decor.tr { top: clamp(10px,2vw,24px); right: clamp(10px,2vw,24px); border-top: 2px solid var(--gold); border-right: 2px solid var(--gold); }
-.corner-decor.bl { bottom: clamp(10px,2vw,24px); left: clamp(10px,2vw,24px); border-bottom: 2px solid var(--gold); border-left: 2px solid var(--gold); }
-.corner-decor.br { bottom: clamp(10px,2vw,24px); right: clamp(10px,2vw,24px); border-bottom: 2px solid var(--gold); border-right: 2px solid var(--gold); }
+/* ══════════════════════════════════════
+   SLIDE 1 — CINEMATIC COVER
+══════════════════════════════════════ */
+#s1{background:var(--ink)}
+#s1 .bg{position:absolute;inset:0;overflow:hidden}
+#s1 .hero-img{position:absolute;right:-2%;bottom:0;height:95%;opacity:.35;object-fit:contain;filter:saturate(0.6)}
+#s1 .smoke{position:absolute;inset:0;background:
+  radial-gradient(ellipse 80% 60% at 20% 50%,rgba(8,8,15,0.95) 0%,transparent 70%),
+  radial-gradient(ellipse 50% 80% at 70% 100%,rgba(201,162,39,.08) 0%,transparent 60%),
+  radial-gradient(ellipse 40% 40% at 80% 20%,rgba(192,57,43,.07) 0%,transparent 60%)}
+#s1 .grid-bg{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(201,162,39,.04) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(201,162,39,.04) 1px,transparent 1px);
+  background-size:clamp(40px,5vw,70px) clamp(40px,5vw,70px)}
+#s1 .content{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center;height:100%;padding:var(--pad);padding-left:clamp(2rem,8vw,9rem);gap:clamp(.5rem,1.5vh,1.2rem);max-width:65%}
+#s1 .eyebrow{font-family:'Space Mono',monospace;font-size:var(--sm);color:var(--gold);letter-spacing:4px;text-transform:uppercase}
+#s1 h1{font-family:'Noto Serif SC',serif;font-size:clamp(2.8rem,8vw,7rem);font-weight:900;color:#fff;line-height:1.05}
+#s1 h1 em{color:var(--gold);font-style:normal;display:block}
+#s1 .sub{font-size:var(--body);color:rgba(255,255,255,.6);line-height:1.7;max-width:480px}
+#s1 .author-row{display:flex;align-items:center;gap:14px;margin-top:clamp(.5rem,1.5vh,1rem)}
+#s1 .ava{width:clamp(36px,5vw,52px);height:clamp(36px,5vw,52px);border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--red));display:flex;align-items:center;justify-content:center;font-size:clamp(16px,2.5vw,24px);flex-shrink:0;border:2px solid rgba(201,162,39,.4)}
+#s1 .byline{font-size:var(--sm);color:rgba(255,255,255,.5);line-height:1.5}
+#s1 .byline strong{color:var(--gold2);font-size:var(--body)}
+#s1 .scroll{position:absolute;bottom:clamp(16px,4vh,36px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;color:rgba(255,255,255,.3);font-size:var(--sm);font-family:'Space Mono',monospace;animation:bob 2.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(9px)}}
 
-.slide-num {
-  position: absolute;
-  bottom: clamp(12px,2vh,24px);
-  right: clamp(16px,3vw,40px);
-  font-size: var(--small-size);
-  font-family: 'Space Mono', monospace;
-  color: var(--muted);
-  letter-spacing: 2px;
-}
+/* gold separator line */
+.gline{display:block;width:clamp(36px,7vw,70px);height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
 
-.gold-line {
-  display: block;
-  width: clamp(40px, 8vw, 80px);
-  height: 2px;
-  background: linear-gradient(90deg, var(--gold), transparent);
-  margin: var(--element-gap) 0;
-}
-
-/* ============================================
-   TAG / BADGE
-   ============================================ */
-.tag {
-  display: inline-block;
-  font-size: var(--small-size);
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  padding: 3px 10px;
-  border-radius: 4px;
-  border: 1px solid currentColor;
-}
-.tag-gold  { color: var(--gold); border-color: var(--gold); }
-.tag-red   { color: var(--red);  border-color: var(--red); }
-.tag-jade  { color: var(--jade); border-color: var(--jade); }
-.tag-sky   { color: var(--sky);  border-color: var(--sky); }
-
-/* ============================================
-   REVEAL ANIMATION
-   ============================================ */
-.reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
-.reveal.visible { opacity: 1; transform: translateY(0); }
-.reveal-delay-1 { transition-delay: 0.1s; }
-.reveal-delay-2 { transition-delay: 0.22s; }
-.reveal-delay-3 { transition-delay: 0.34s; }
-.reveal-delay-4 { transition-delay: 0.46s; }
-.reveal-delay-5 { transition-delay: 0.58s; }
-.reveal-delay-6 { transition-delay: 0.70s; }
-
-/* ============================================
-   NAV DOTS
-   ============================================ */
-.nav-dots {
-  position: fixed;
-  right: clamp(8px, 2vw, 20px);
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 100;
-}
-.nav-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.2);
-  cursor: pointer;
-  transition: all 0.3s;
-  border: none;
-  padding: 0;
-}
-.nav-dot.active { background: var(--gold); transform: scale(1.5); }
-
-/* ============================================
-   PROGRESS BAR
-   ============================================ */
-.progress-bar {
-  position: fixed;
-  top: 0; left: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--red), var(--gold));
-  z-index: 100;
-  transition: width 0.3s ease;
-}
-
-/* ============================================
-   SLIDE 1 — TITLE
-   ============================================ */
-#s1 { background: var(--ink); }
-
-.s1-bg {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-.s1-circle {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-}
-.s1-c1 { width: 45vw; height: 45vw; background: rgba(192,57,43,0.12); top: -10%; right: -10%; }
-.s1-c2 { width: 35vw; height: 35vw; background: rgba(201,162,39,0.10); bottom: 0; left: -5%; }
-.s1-c3 { width: 20vw; height: 20vw; background: rgba(46,204,143,0.07); top: 40%; right: 30%; }
-
-.s1-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(201,162,39,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201,162,39,0.04) 1px, transparent 1px);
-  background-size: clamp(40px,5vw,70px) clamp(40px,5vw,70px);
-}
-
-#s1 .slide-content {
-  justify-content: center;
-  align-items: flex-start;
-  gap: var(--content-gap);
-  padding-left: clamp(2rem, 8vw, 10rem);
-}
-
-.s1-eyebrow {
-  font-size: var(--small-size);
-  color: var(--gold);
-  font-family: 'Space Mono', monospace;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-}
-
-.s1-title {
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(2.2rem, 7vw, 6rem);
-  font-weight: 900;
-  color: #fff;
-  line-height: 1.1;
-}
-.s1-title span { color: var(--gold); }
-
-.s1-sub {
-  font-size: clamp(0.9rem, 1.8vw, 1.3rem);
-  color: var(--muted);
-  max-width: 520px;
-  line-height: 1.6;
-}
-
-.s1-author {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: clamp(0.5rem,2vh,1.5rem);
-}
-.s1-avatar {
-  width: clamp(32px,5vw,52px);
-  height: clamp(32px,5vw,52px);
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--gold), var(--red));
-  display: flex; align-items: center; justify-content: center;
-  font-size: clamp(14px,2vw,22px);
-  flex-shrink: 0;
-}
-.s1-byline { font-size: var(--body-size); color: rgba(255,255,255,0.6); }
-.s1-byline strong { color: var(--gold2); }
-
-.s1-scroll-hint {
-  position: absolute;
-  bottom: clamp(20px, 4vh, 40px);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  color: var(--muted);
-  font-size: var(--small-size);
-  animation: bounce 2s ease-in-out infinite;
-}
-@keyframes bounce {
-  0%,100% { transform: translateX(-50%) translateY(0); }
-  50%      { transform: translateX(-50%) translateY(8px); }
-}
-
-/* ============================================
+/* ══════════════════════════════════════
    SLIDE 2 — 起因
-   ============================================ */
-#s2 { background: linear-gradient(135deg, #0f0e1a 0%, #1a1025 100%); }
+══════════════════════════════════════ */
+#s2{background:linear-gradient(145deg,#0d0c1a,#18102a)}
+#s2 .layout{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:center;height:100%;padding:var(--pad);max-width:1200px;margin:0 auto;width:100%}
+@media(max-width:700px){#s2 .layout{grid-template-columns:1fr}}
+#s2 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;line-height:1.3;margin:clamp(6px,1vh,12px) 0}
+#s2 p{font-size:var(--body);color:rgba(255,255,255,.6);line-height:1.75;margin-bottom:clamp(6px,1vh,10px)}
+#s2 .quote{background:rgba(201,162,39,.08);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:clamp(10px,1.5vw,18px) clamp(14px,2vw,22px);margin-top:clamp(8px,1.5vh,14px)}
+#s2 .quote p{font-family:'Noto Serif SC',serif;font-size:var(--h3);color:var(--gold2);font-style:italic;line-height:1.5;margin:0}
+#s2 .quote small{font-size:var(--sm);color:rgba(255,255,255,.4);display:block;margin-top:6px}
+.reason-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:clamp(10px,1.5vw,16px);display:flex;align-items:flex-start;gap:12px;margin-bottom:clamp(6px,1vh,10px)}
+.rc-icon{font-size:clamp(18px,2.5vw,26px);flex-shrink:0;margin-top:2px}
+.rc-body strong{font-size:var(--body);color:#fff;display:block;margin-bottom:3px}
+.rc-body p{font-size:var(--sm);color:rgba(255,255,255,.5);line-height:1.5;margin:0}
 
-.s2-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(1.5rem, 4vw, 4rem);
-  align-items: center;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-@media (max-width: 700px) {
-  .s2-layout { grid-template-columns: 1fr; }
-}
+/* ══════════════════════════════════════
+   SLIDE 3 — 游戏全貌 SHOWCASE
+══════════════════════════════════════ */
+#s3{background:#08090f}
+#s3 .content{height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(10px,1.5vh,18px)}
+#s3 .head{text-align:center;flex-shrink:0}
+#s3 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px}
+#s3 .scene-grid{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:clamp(4px,0.8vw,10px);min-height:0}
+.scene-cell{position:relative;border-radius:8px;overflow:hidden;cursor:default}
+.scene-cell img{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;filter:brightness(.75) saturate(.9)}
+.scene-cell:hover img{transform:scale(1.06);filter:brightness(.9) saturate(1.1)}
+.scene-cell .sc-label{position:absolute;bottom:0;left:0;right:0;padding:clamp(4px,1vw,8px) clamp(6px,1.2vw,10px);background:linear-gradient(transparent,rgba(0,0,0,.8));font-size:clamp(.58rem,.85vw,.75rem);font-weight:700;color:#fff}
+.scene-cell .sc-kingdom{position:absolute;top:5px;left:5px;width:clamp(14px,2vw,20px);height:clamp(14px,2vw,20px);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:clamp(8px,1.2vw,11px);font-weight:900;color:#fff;flex-shrink:0}
+.sc-wei{background:var(--wei)}.sc-shu{background:var(--shu)}.sc-wu{background:var(--wu)}
+/* featured first cell */
+.scene-cell.big{grid-row:span 2}
 
-.s2-left h2 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: var(--h2-size);
-  color: #fff;
-  margin: var(--element-gap) 0;
-  line-height: 1.3;
-}
-.s2-left p {
-  font-size: var(--body-size);
-  color: rgba(255,255,255,0.65);
-  line-height: 1.7;
-  max-width: 400px;
-}
+/* ══════════════════════════════════════
+   SLIDE 4 — 武将图鉴
+══════════════════════════════════════ */
+#s4{background:linear-gradient(160deg,#0e0b18,#130e1e)}
+#s4 .content{height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(8px,1.2vh,14px)}
+#s4 .head{text-align:center;flex-shrink:0}
+#s4 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px}
+#s4 .char-strip{display:flex;gap:clamp(6px,1.2vw,14px);flex:1;min-height:0;align-items:flex-end;justify-content:center;padding-bottom:clamp(4px,1vh,10px)}
+.char-card{position:relative;border-radius:10px;overflow:hidden;flex:1;max-width:clamp(60px,7vw,100px);height:100%;cursor:default;transition:all .3s;border:1px solid rgba(255,255,255,.07)}
+.char-card:hover{transform:translateY(-6px) scale(1.04);border-color:rgba(201,162,39,.4);z-index:10}
+.char-card img{width:100%;height:100%;object-fit:cover;object-position:top center;filter:brightness(.8) saturate(.85)}
+.char-card:hover img{filter:brightness(1) saturate(1)}
+.char-card .rarity-bar{position:absolute;top:0;left:0;right:0;height:3px}
+.rb-legend{background:linear-gradient(90deg,#f0c84a,#c9a227)}
+.rb-rare{background:linear-gradient(90deg,#4a90d9,#64b4f6)}
+.rb-common{background:linear-gradient(90deg,#2ecc8f,#6ee5b7)}
+.char-card .cname{position:absolute;bottom:0;left:0;right:0;padding:clamp(4px,0.8vw,7px) 4px;background:linear-gradient(transparent,rgba(0,0,0,.85));font-size:clamp(.58rem,.85vw,.75rem);font-weight:700;color:#fff;text-align:center}
+.char-card .kingdom-dot{position:absolute;top:6px;right:5px;width:clamp(8px,1.2vw,12px);height:clamp(8px,1.2vw,12px);border-radius:50%}
+#s4 .legend-row{display:flex;gap:clamp(12px,2vw,24px);justify-content:center;flex-shrink:0}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:var(--sm);color:rgba(255,255,255,.5)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
 
-.s2-quote-box {
-  background: rgba(201,162,39,0.08);
-  border-left: 3px solid var(--gold);
-  border-radius: 0 10px 10px 0;
-  padding: clamp(10px,2vw,20px) clamp(14px,2.5vw,24px);
-  margin-top: var(--content-gap);
-}
-.s2-quote-box p {
-  font-family: 'Noto Serif SC', serif;
-  font-size: var(--h3-size);
-  color: var(--gold2);
-  font-style: italic;
-  line-height: 1.5;
-}
-.s2-quote-box small {
-  font-size: var(--small-size);
-  color: var(--muted);
-  display: block;
-  margin-top: 6px;
-}
+/* ══════════════════════════════════════
+   SLIDE 5 — 功能模块
+══════════════════════════════════════ */
+#s5{background:linear-gradient(150deg,#0b0f18,#0f1620)}
+#s5 .content{height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(8px,1.2vh,14px)}
+#s5 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px;text-align:center;flex-shrink:0}
+#s5 .mod-grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:clamp(7px,1.2vw,14px);min-height:0}
+.mod-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:clamp(10px,1.5vw,16px);display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;transition:border-color .3s,background .3s}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mc,var(--gold));opacity:.55}
+.mod-card:hover{background:rgba(255,255,255,.06);border-color:rgba(201,162,39,.25)}
+.mod-card .mc-icon{font-size:clamp(20px,2.8vw,30px)}
+.mod-card .mc-title{font-size:clamp(.78rem,1.2vw,.95rem);font-weight:800;color:#fff;margin:clamp(4px,.8vh,8px) 0 2px}
+.mod-card .mc-desc{font-size:clamp(.62rem,.95vw,.78rem);color:rgba(255,255,255,.45);line-height:1.45}
+.mod-card .mc-badge{font-size:clamp(.56rem,.8vw,.68rem);background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border-radius:4px;padding:1px 6px;display:inline-block;margin-top:4px;font-family:'Space Mono',monospace}
 
-.s2-right {
-  display: flex;
-  flex-direction: column;
-  gap: var(--element-gap);
-}
-.s2-card {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: clamp(10px,1.5vw,16px) clamp(14px,2vw,20px);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.s2-card-icon { font-size: clamp(18px,2.5vw,26px); flex-shrink: 0; }
-.s2-card-text { font-size: var(--body-size); color: rgba(255,255,255,0.7); line-height: 1.4; }
-.s2-card-text strong { color: #fff; display: block; font-size: clamp(0.8rem,1.3vw,1rem); }
+/* ══════════════════════════════════════
+   SLIDE 6 — 技术架构
+══════════════════════════════════════ */
+#s6{background:#07090e}
+#s6 .content{height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(8px,1.2vh,14px)}
+#s6 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px;text-align:center;flex-shrink:0}
+.arch-layers{display:flex;flex-direction:column;gap:clamp(6px,1vh,10px);flex:1;justify-content:center}
+.arch-row{display:flex;align-items:center;gap:clamp(8px,1.5vw,16px)}
+.arch-label{font-size:var(--sm);font-family:'Space Mono',monospace;color:rgba(255,255,255,.35);width:clamp(48px,7vw,88px);text-align:right;flex-shrink:0;letter-spacing:.5px}
+.arch-boxes{display:flex;gap:clamp(5px,1vw,10px);flex-wrap:wrap}
+.abox{border-radius:7px;padding:clamp(5px,.9vw,8px) clamp(9px,1.4vw,14px);font-size:clamp(.62rem,.95vw,.78rem);font-weight:700;border:1px solid;white-space:nowrap}
+.ab-ui   {background:rgba(201,162,39,.09);border-color:rgba(201,162,39,.3);color:#e8c84a}
+.ab-js   {background:rgba(52,152,219,.09);border-color:rgba(52,152,219,.3);color:#7ec8f5}
+.ab-db   {background:rgba(46,204,143,.09);border-color:rgba(46,204,143,.3);color:#6ff5c3}
+.ab-inf  {background:rgba(192,57,43,.09);border-color:rgba(192,57,43,.3);color:#ff9d90}
+.ab-ai   {background:rgba(156,39,176,.09);border-color:rgba(156,39,176,.3);color:#d89ef7}
+.arch-arrow{text-align:center;color:rgba(201,162,39,.25);font-size:var(--sm);letter-spacing:3px}
+.arch-foot{text-align:center;font-size:var(--sm);color:rgba(255,255,255,.2);font-family:'Space Mono',monospace;letter-spacing:.5px;flex-shrink:0}
 
-/* ============================================
-   SLIDE 3 — 第一步
-   ============================================ */
-#s3 { background: #0d0d14; }
+/* ══════════════════════════════════════
+   SLIDE 7 — AI工具
+══════════════════════════════════════ */
+#s7{background:linear-gradient(145deg,#060c1a,#0c1428)}
+#s7 .layout{display:grid;grid-template-columns:1fr 1.25fr;gap:var(--gap);align-items:center;height:100%;padding:var(--pad);max-width:1200px;margin:0 auto;width:100%}
+@media(max-width:700px){#s7 .layout{grid-template-columns:1fr}}
+#s7 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;line-height:1.3;margin:clamp(6px,1vh,12px) 0}
+#s7 .lead{font-size:var(--body);color:rgba(255,255,255,.6);line-height:1.75}
+#s7 .big-quote{background:rgba(201,162,39,.07);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:clamp(10px,1.5vw,16px) clamp(14px,2vw,20px);margin-top:clamp(8px,1.5vh,14px);font-family:'Noto Serif SC',serif;font-size:var(--h3);color:var(--gold2);font-style:italic;line-height:1.6}
+.ai-tool{background:rgba(255,255,255,.04);border:1px solid rgba(52,152,219,.18);border-radius:12px;padding:clamp(10px,1.5vw,16px);display:flex;gap:14px;margin-bottom:clamp(7px,1.2vh,12px)}
+.at-icon{font-size:clamp(24px,3.2vw,36px);flex-shrink:0}
+.at-name{font-size:clamp(.82rem,1.3vw,1rem);font-weight:800;color:#fff;margin-bottom:3px}
+.at-desc{font-size:clamp(.65rem,1vw,.78rem);color:rgba(255,255,255,.5);line-height:1.45}
+.at-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.at-tag{font-size:clamp(.56rem,.82vw,.68rem);background:rgba(52,152,219,.12);color:var(--sky);border-radius:3px;padding:1px 6px;font-family:'Space Mono',monospace}
 
-.s3-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px,1.5vh,16px);
-  max-width: 700px;
-  margin: 0 auto;
-  width: 100%;
-}
-.s3-step {
-  display: grid;
-  grid-template-columns: clamp(36px,5vw,56px) 24px 1fr;
-  align-items: start;
-  gap: clamp(8px,1.5vw,16px);
-}
-.s3-step-num {
-  font-family: 'Space Mono', monospace;
-  font-size: clamp(1.2rem,3vw,2rem);
-  font-weight: 700;
-  color: var(--dim);
-  text-align: right;
-  line-height: 1.2;
-}
-.s3-step-dot {
-  margin-top: 6px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--gold);
-  flex-shrink: 0;
-  position: relative;
-}
-.s3-step-dot::after {
-  content: '';
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1px;
-  height: clamp(24px,3vh,48px);
-  background: rgba(201,162,39,0.2);
-}
-.s3-step:last-child .s3-step-dot::after { display: none; }
-.s3-step-body { padding-bottom: clamp(6px,1vh,12px); }
-.s3-step-body strong {
-  font-size: var(--h3-size);
-  color: #fff;
-  display: block;
-  margin-bottom: 4px;
-  line-height: 1.3;
-}
-.s3-step-body p { font-size: var(--body-size); color: rgba(255,255,255,0.55); line-height: 1.5; }
+/* ══════════════════════════════════════
+   SLIDE 8 — 遇到的坑
+══════════════════════════════════════ */
+#s8{background:linear-gradient(145deg,#110808,#1a0c0c)}
+#s8 .content{height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(8px,1.2vh,14px)}
+#s8 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px;text-align:center;flex-shrink:0}
+#s8 .bugs{display:grid;grid-template-columns:1fr 1fr;gap:clamp(7px,1.2vw,12px);flex:1;min-height:0}
+.bug-card{background:rgba(192,57,43,.07);border:1px solid rgba(192,57,43,.18);border-radius:10px;padding:clamp(10px,1.5vw,14px);display:flex;gap:10px;align-items:flex-start}
+.bug-num{font-family:'Space Mono',monospace;font-size:clamp(1rem,2vw,1.6rem);font-weight:700;color:rgba(192,57,43,.35);line-height:1;flex-shrink:0;min-width:clamp(22px,3vw,32px)}
+.bug-title{font-size:clamp(.75rem,1.2vw,.9rem);font-weight:800;color:rgba(255,155,135,.9);display:block;margin-bottom:3px;line-height:1.3}
+.bug-desc{font-size:clamp(.62rem,.95vw,.75rem);color:rgba(255,255,255,.45);line-height:1.45}
+.bug-fix{display:inline-block;margin-top:5px;font-size:clamp(.58rem,.85vw,.7rem);background:rgba(46,204,143,.1);color:var(--jade);border:1px solid rgba(46,204,143,.25);border-radius:4px;padding:1px 7px;font-family:'Space Mono',monospace}
 
-.s3-code-chip {
-  display: inline-block;
-  background: rgba(46,204,143,0.1);
-  border: 1px solid rgba(46,204,143,0.3);
-  color: var(--jade);
-  font-family: 'Space Mono', monospace;
-  font-size: var(--small-size);
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 4px;
-}
-
-/* ============================================
-   SLIDE 4 — 功能建设
-   ============================================ */
-#s4 { background: linear-gradient(160deg, #0e0e1c, #160f1a); }
-
-.s4-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(6px, 1.2vw, 14px);
-  max-width: 980px;
-  margin: 0 auto;
-  width: 100%;
-}
-@media (max-width: 600px) {
-  .s4-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-.s4-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 10px;
-  padding: clamp(10px,1.5vw,16px);
-  transition: border-color 0.3s, background 0.3s;
-  position: relative;
-  overflow: hidden;
-}
-.s4-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--card-accent, var(--gold));
-  opacity: 0.6;
-}
-.s4-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(201,162,39,0.2); }
-.s4-card-icon { font-size: clamp(18px, 2.5vw, 26px); margin-bottom: 6px; }
-.s4-card-title {
-  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 3px;
-  line-height: 1.3;
-}
-.s4-card-desc {
-  font-size: clamp(0.65rem, 1vw, 0.78rem);
-  color: rgba(255,255,255,0.45);
-  line-height: 1.4;
-}
-
-/* ============================================
-   SLIDE 5 — 遇到的坑
-   ============================================ */
-#s5 { background: linear-gradient(135deg, #130a0a, #1a0e0e); }
-
-.s5-header { text-align: center; margin-bottom: var(--content-gap); }
-.s5-header h2 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: var(--h2-size);
-  color: #fff;
-  margin-top: var(--element-gap);
-}
-
-.s5-bugs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(8px, 1.5vw, 16px);
-  max-width: 900px;
-  margin: 0 auto;
-  width: 100%;
-}
-@media (max-width: 600px) {
-  .s5-bugs { grid-template-columns: 1fr; }
-}
-.s5-bug {
-  background: rgba(192,57,43,0.07);
-  border: 1px solid rgba(192,57,43,0.2);
-  border-radius: 10px;
-  padding: clamp(10px,1.5vw,16px);
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-.s5-bug-num {
-  font-family: 'Space Mono', monospace;
-  font-size: clamp(1rem, 2vw, 1.5rem);
-  color: rgba(192,57,43,0.4);
-  font-weight: 700;
-  line-height: 1;
-  flex-shrink: 0;
-  min-width: 28px;
-}
-.s5-bug-body strong {
-  font-size: clamp(0.78rem, 1.2vw, 0.9rem);
-  color: rgba(255,160,140,0.9);
-  display: block;
-  margin-bottom: 3px;
-  line-height: 1.3;
-}
-.s5-bug-body p {
-  font-size: clamp(0.65rem, 1vw, 0.78rem);
-  color: rgba(255,255,255,0.45);
-  line-height: 1.4;
-}
-.s5-bug-fix {
-  display: inline-block;
-  margin-top: 5px;
-  font-size: clamp(0.6rem, 0.9vw, 0.72rem);
-  background: rgba(46,204,143,0.1);
-  color: var(--jade);
-  border: 1px solid rgba(46,204,143,0.25);
-  border-radius: 4px;
-  padding: 1px 7px;
-  font-family: 'Space Mono', monospace;
-}
-
-/* ============================================
-   SLIDE 6 — AI工具的力量
-   ============================================ */
-#s6 { background: linear-gradient(145deg, #060c1a, #0d1628); }
-
-.s6-layout {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: clamp(1.5rem, 4vw, 4rem);
-  align-items: center;
-  max-width: 1000px;
-  margin: 0 auto;
-  width: 100%;
-}
-@media (max-width: 700px) {
-  .s6-layout { grid-template-columns: 1fr; }
-}
-
-.s6-left h2 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: var(--h2-size);
-  color: #fff;
-  line-height: 1.3;
-  margin: var(--element-gap) 0;
-}
-.s6-left p {
-  font-size: var(--body-size);
-  color: rgba(255,255,255,0.6);
-  line-height: 1.7;
-}
-
-.s6-tools {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px, 1.2vw, 12px);
-}
-.s6-tool {
-  background: rgba(52,152,219,0.08);
-  border: 1px solid rgba(52,152,219,0.2);
-  border-radius: 12px;
-  padding: clamp(10px,1.5vw,16px);
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.s6-tool-icon {
-  font-size: clamp(22px,3vw,32px);
-  flex-shrink: 0;
-}
-.s6-tool-body {}
-.s6-tool-name {
-  font-size: clamp(0.82rem, 1.3vw, 1rem);
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 3px;
-}
-.s6-tool-desc {
-  font-size: clamp(0.65rem, 1vw, 0.78rem);
-  color: rgba(255,255,255,0.5);
-  line-height: 1.4;
-}
-.s6-tool-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 5px;
-}
-.s6-tag {
-  font-size: clamp(0.58rem, 0.85vw, 0.68rem);
-  background: rgba(52,152,219,0.15);
-  color: var(--sky);
-  border-radius: 3px;
-  padding: 1px 6px;
-  font-family: 'Space Mono', monospace;
-}
-
-.s6-quote {
-  margin-top: var(--content-gap);
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(0.9rem, 1.8vw, 1.2rem);
-  color: var(--gold2);
-  font-style: italic;
-  line-height: 1.5;
-  padding: clamp(10px,1.5vw,16px);
-  background: rgba(201,162,39,0.07);
-  border-left: 3px solid var(--gold);
-  border-radius: 0 8px 8px 0;
-}
-
-/* ============================================
-   SLIDE 7 — 架构图
-   ============================================ */
-#s7 { background: #080d14; }
-
-.s7-header { text-align: center; margin-bottom: clamp(10px,2vh,20px); }
-.s7-header h2 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: var(--h2-size);
-  color: #fff;
-  margin-top: var(--element-gap);
-}
-
-.s7-arch {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(6px,1vh,12px);
-  max-width: 820px;
-  margin: 0 auto;
-  width: 100%;
-}
-.s7-layer {
-  display: flex;
-  align-items: center;
-  gap: clamp(8px,1.5vw,16px);
-}
-.s7-layer-label {
-  font-size: var(--small-size);
-  font-family: 'Space Mono', monospace;
-  color: var(--muted);
-  width: clamp(50px,8vw,90px);
-  text-align: right;
-  flex-shrink: 0;
-  letter-spacing: 0.5px;
-}
-.s7-layer-content {
-  flex: 1;
-  display: flex;
-  gap: clamp(5px,1vw,10px);
-  flex-wrap: wrap;
-}
-.s7-box {
-  border-radius: 8px;
-  padding: clamp(6px,1vw,10px) clamp(10px,1.5vw,16px);
-  font-size: clamp(0.68rem, 1vw, 0.82rem);
-  font-weight: 600;
-  white-space: nowrap;
-  border: 1px solid;
-}
-.s7-box.ui    { background: rgba(201,162,39,0.1);  border-color: rgba(201,162,39,0.3);  color: var(--gold2); }
-.s7-box.logic { background: rgba(52,152,219,0.1);  border-color: rgba(52,152,219,0.3);  color: #7ec8f5; }
-.s7-box.data  { background: rgba(46,204,143,0.1);  border-color: rgba(46,204,143,0.3);  color: #6ff5c3; }
-.s7-box.infra { background: rgba(192,57,43,0.1);   border-color: rgba(192,57,43,0.3);   color: #ff9d90; }
-.s7-box.ai    { background: rgba(156,39,176,0.1);  border-color: rgba(156,39,176,0.3);  color: #d89ef7; }
-
-.s7-arrow {
-  text-align: center;
-  color: rgba(201,162,39,0.3);
-  font-size: clamp(12px,1.5vw,16px);
-  letter-spacing: 3px;
-}
-
-.s7-footer-note {
-  text-align: center;
-  margin-top: clamp(8px,1.5vh,16px);
-  font-size: var(--small-size);
-  color: rgba(255,255,255,0.3);
-  font-family: 'Space Mono', monospace;
-  letter-spacing: 0.5px;
-}
-
-/* ============================================
-   SLIDE 8 — 数字成就
-   ============================================ */
-#s8 { background: linear-gradient(145deg, #0d0c18, #141020); }
-
-.s8-header { text-align: center; margin-bottom: var(--content-gap); }
-.s8-header h2 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: var(--h2-size);
-  color: #fff;
-  margin-top: var(--element-gap);
-}
-
-.s8-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: clamp(8px, 1.5vw, 16px);
-  max-width: 860px;
-  margin: 0 auto;
-  width: 100%;
-}
-@media (max-width: 600px) {
-  .s8-stats { grid-template-columns: repeat(2, 1fr); }
-}
-
-.s8-stat {
-  text-align: center;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  padding: clamp(12px,2vw,20px) clamp(8px,1.5vw,14px);
-  position: relative;
-  overflow: hidden;
-}
-.s8-stat::before {
-  content: '';
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--stat-color, var(--gold));
-  opacity: 0.5;
-}
-.s8-stat-num {
-  font-family: 'Space Mono', monospace;
-  font-size: clamp(1.4rem, 4vw, 3rem);
-  font-weight: 700;
-  color: var(--stat-color, var(--gold2));
-  line-height: 1;
-  margin-bottom: 4px;
-}
-.s8-stat-label {
-  font-size: clamp(0.65rem, 1vw, 0.8rem);
-  color: rgba(255,255,255,0.5);
-  line-height: 1.3;
-}
-.s8-stat-emoji { font-size: clamp(16px, 2.5vw, 24px); margin-bottom: 6px; }
-
-/* ============================================
+/* ══════════════════════════════════════
    SLIDE 9 — 心路历程
-   ============================================ */
-#s9 { background: linear-gradient(160deg, #0a0f1a, #0f0a18); }
+══════════════════════════════════════ */
+#s9{background:linear-gradient(150deg,#0a0e1a,#0e0a18)}
+#s9 .layout{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);height:100%;padding:var(--pad);max-width:1200px;margin:0 auto;width:100%;align-items:start;padding-top:clamp(1.5rem,5vh,4rem)}
+@media(max-width:700px){#s9 .layout{grid-template-columns:1fr}}
+.emo-head{font-size:var(--sm);font-family:'Space Mono',monospace;letter-spacing:2px;text-transform:uppercase;margin-bottom:clamp(8px,1.2vh,12px)}
+.emo-cards{display:flex;flex-direction:column;gap:clamp(6px,1vh,10px)}
+.emo-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:clamp(8px,1.2vw,13px);display:flex;gap:10px;align-items:flex-start}
+.emo-icon{font-size:clamp(16px,2.2vw,22px);flex-shrink:0;margin-top:1px}
+.emo-title{font-size:clamp(.75rem,1.2vw,.9rem);font-weight:800;color:#fff;display:block;margin-bottom:2px;line-height:1.3}
+.emo-text{font-size:clamp(.62rem,.95vw,.76rem);color:rgba(255,255,255,.5);line-height:1.5}
+#s9 .head-center{text-align:center;grid-column:1/-1;flex-shrink:0}
+#s9 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px}
 
-.s9-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(1.5rem, 4vw, 4rem);
-  align-items: start;
-  max-width: 960px;
-  margin: 0 auto;
-  width: 100%;
-}
-@media (max-width: 700px) { .s9-layout { grid-template-columns: 1fr; } }
+/* ══════════════════════════════════════
+   SLIDE 10 — 数字成就
+══════════════════════════════════════ */
+#s10{background:linear-gradient(145deg,#0c0b18,#141020)}
+#s10 .content{height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(8px,1.2vh,14px)}
+#s10 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px;text-align:center;flex-shrink:0}
+#s10 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1.5vw,16px);flex:1;min-height:0}
+.stat-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:clamp(4px,.8vh,8px);position:relative;overflow:hidden;transition:border-color .3s}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--sc,var(--gold));opacity:.45}
+.stat-card:hover{border-color:rgba(201,162,39,.25)}
+.stat-emoji{font-size:clamp(22px,3vw,34px)}
+.stat-num{font-family:'Space Mono',monospace;font-size:clamp(1.6rem,4.5vw,3.6rem);font-weight:700;color:var(--sc,var(--gold2));line-height:1}
+.stat-unit{font-size:clamp(.82rem,1.3vw,1rem);color:var(--sc,var(--gold2));font-weight:700;margin-left:2px}
+.stat-label{font-size:clamp(.65rem,1vw,.8rem);color:rgba(255,255,255,.45);line-height:1.35;max-width:120px}
 
-.s9-col-title {
-  font-size: var(--small-size);
-  font-family: 'Space Mono', monospace;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: var(--element-gap);
-}
+/* ══════════════════════════════════════
+   SLIDE 11 — 学到了什么
+══════════════════════════════════════ */
+#s11{background:linear-gradient(140deg,#080e0c,#0d1409)}
+#s11 .content{height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(8px,1.2vh,14px)}
+#s11 h2{font-family:'Noto Serif SC',serif;font-size:var(--h2);color:#fff;margin-top:8px;text-align:center;flex-shrink:0}
+#s11 .lessons{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:clamp(8px,1.5vw,14px);flex:1;min-height:0}
+.lesson{background:rgba(46,204,143,.05);border:1px solid rgba(46,204,143,.12);border-radius:12px;padding:clamp(10px,1.5vw,16px);display:flex;flex-direction:column;gap:clamp(5px,.8vh,9px)}
+.lesson .li-icon{font-size:clamp(22px,3vw,32px)}
+.lesson .li-title{font-size:clamp(.8rem,1.3vw,.96rem);font-weight:800;color:#fff;line-height:1.3}
+.lesson .li-desc{font-size:clamp(.63rem,.98vw,.78rem);color:rgba(255,255,255,.5);line-height:1.5;flex:1}
 
-.s9-moments {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(8px,1.2vh,12px);
-}
-.s9-moment {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 10px;
-  padding: clamp(8px,1.2vw,14px);
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-}
-.s9-moment-emoji { font-size: clamp(16px,2.2vw,22px); flex-shrink: 0; margin-top: 1px; }
-.s9-moment-text {
-  font-size: clamp(0.7rem, 1.1vw, 0.85rem);
-  color: rgba(255,255,255,0.65);
-  line-height: 1.5;
-}
-.s9-moment-text strong { color: #fff; display: block; margin-bottom: 2px; font-size: clamp(0.75rem,1.2vw,0.9rem); }
+/* ══════════════════════════════════════
+   SLIDE 12 — 感悟
+══════════════════════════════════════ */
+#s12{background:linear-gradient(145deg,#0e0b18,#1a0e14)}
+#s12 .content{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:var(--pad);gap:clamp(.8rem,2vh,1.6rem)}
+#s12 .big-txt{font-family:'Noto Serif SC',serif;font-size:clamp(1.4rem,4vw,3.2rem);font-weight:900;color:#fff;line-height:1.4;max-width:760px}
+#s12 .big-txt em{color:var(--gold);font-style:normal}
+#s12 .divider{width:clamp(50px,12vw,120px);height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+#s12 .sub{font-size:var(--body);color:rgba(255,255,255,.55);max-width:600px;line-height:1.75}
+#s12 .tags-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+#s12 .ftag{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 15px;font-size:var(--sm);color:rgba(255,255,255,.55)}
 
-/* ============================================
-   SLIDE 10 — 学到了什么
-   ============================================ */
-#s10 { background: linear-gradient(135deg, #080d10, #0d1409); }
-
-.s10-header { text-align: center; margin-bottom: var(--content-gap); }
-.s10-header h2 {
-  font-family: 'Noto Serif SC', serif;
-  font-size: var(--h2-size);
-  color: #fff;
-  margin-top: var(--element-gap);
-}
-
-.s10-lessons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: clamp(8px,1.5vw,16px);
-  max-width: 840px;
-  margin: 0 auto;
-  width: 100%;
-}
-@media (max-width: 600px) { .s10-lessons { grid-template-columns: 1fr; } }
-
-.s10-lesson {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: clamp(10px,1.5vw,16px);
-  background: rgba(46,204,143,0.05);
-  border: 1px solid rgba(46,204,143,0.12);
-  border-radius: 10px;
-}
-.s10-icon { font-size: clamp(18px,2.5vw,26px); flex-shrink: 0; }
-.s10-body strong {
-  font-size: clamp(0.8rem,1.2vw,0.95rem);
-  color: #fff;
-  display: block;
-  margin-bottom: 3px;
-  line-height: 1.3;
-}
-.s10-body p {
-  font-size: clamp(0.65rem,1vw,0.78rem);
-  color: rgba(255,255,255,0.5);
-  line-height: 1.45;
-}
-
-/* ============================================
-   SLIDE 11 — 感悟
-   ============================================ */
-#s11 { background: linear-gradient(145deg, #0e0c18, #1a0e10); }
-
-#s11 .slide-content {
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-}
-
-.s11-big-quote {
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(1.2rem, 3.5vw, 2.8rem);
-  font-weight: 900;
-  color: #fff;
-  line-height: 1.4;
-  max-width: 760px;
-  margin: 0 auto;
-}
-.s11-big-quote em {
-  color: var(--gold);
-  font-style: normal;
-}
-
-.s11-divider {
-  width: clamp(40px,10vw,100px);
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  margin: var(--content-gap) auto;
-}
-
-.s11-sub {
-  font-size: var(--body-size);
-  color: rgba(255,255,255,0.55);
-  max-width: 560px;
-  margin: 0 auto;
-  line-height: 1.7;
-}
-
-.s11-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-top: var(--content-gap);
-}
-.s11-tag {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 20px;
-  padding: 4px 14px;
-  font-size: var(--small-size);
-  color: rgba(255,255,255,0.6);
-}
-
-/* ============================================
-   SLIDE 12 — 终章
-   ============================================ */
-#s12 { background: var(--ink); }
-
-.s12-bg { position: absolute; inset: 0; overflow: hidden; }
-.s12-c1 { position: absolute; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(201,162,39,0.07), transparent 70%); top: 50%; left: 50%; transform: translate(-50%,-50%); border-radius: 50%; }
-
-#s12 .slide-content {
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  gap: var(--content-gap);
-}
-
-.s12-seal {
-  width: clamp(70px,12vw,110px);
-  height: clamp(70px,12vw,110px);
-  border: 2px solid var(--gold);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: clamp(28px,5vw,48px);
-  margin: 0 auto;
-  background: rgba(201,162,39,0.06);
-  animation: pulse-seal 3s ease-in-out infinite;
-}
-@keyframes pulse-seal {
-  0%,100% { box-shadow: 0 0 0 0 rgba(201,162,39,0.15); }
-  50%      { box-shadow: 0 0 0 clamp(8px,2vw,20px) rgba(201,162,39,0); }
-}
-
-.s12-title {
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(1.8rem, 5vw, 4rem);
-  font-weight: 900;
-  color: #fff;
-  line-height: 1.2;
-}
-.s12-title span { color: var(--gold); }
-
-.s12-sub {
-  font-size: var(--body-size);
-  color: rgba(255,255,255,0.5);
-  max-width: 440px;
-  line-height: 1.6;
-}
-
-.s12-cta {
-  display: inline-block;
-  padding: clamp(8px,1.5vw,14px) clamp(20px,3vw,36px);
-  background: linear-gradient(135deg, var(--gold), #b8860b);
-  color: #000;
-  font-weight: 700;
-  font-size: var(--body-size);
-  border-radius: 8px;
-  letter-spacing: 0.5px;
-  text-decoration: none;
-  margin-top: clamp(4px,1vh,10px);
-}
+/* ══════════════════════════════════════
+   SLIDE 13 — ENDING
+══════════════════════════════════════ */
+#s13{background:var(--ink)}
+#s13 .bg{position:absolute;inset:0;overflow:hidden}
+#s13 .hero{position:absolute;right:0;bottom:0;height:88%;opacity:.28;object-fit:contain;filter:saturate(.5)}
+#s13 .glow{position:absolute;inset:0;background:
+  radial-gradient(ellipse 70% 70% at 30% 50%,rgba(8,8,15,.97) 0%,transparent 70%),
+  radial-gradient(ellipse 50% 50% at 80% 80%,rgba(201,162,39,.06) 0%,transparent 60%)}
+#s13 .grid-bg{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(201,162,39,.03) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(201,162,39,.03) 1px,transparent 1px);
+  background-size:clamp(40px,5vw,70px) clamp(40px,5vw,70px)}
+#s13 .content{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;padding:var(--pad);padding-left:clamp(2rem,8vw,9rem);gap:clamp(.6rem,1.8vh,1.4rem);max-width:60%}
+#s13 .seal{width:clamp(60px,9vw,100px);height:clamp(60px,9vw,100px);border:2px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:clamp(26px,4vw,44px);background:rgba(201,162,39,.06);animation:pulse 3s ease-in-out infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(201,162,39,.18)}50%{box-shadow:0 0 0 clamp(8px,2vw,18px) rgba(201,162,39,0)}}
+#s13 h2{font-family:'Noto Serif SC',serif;font-size:clamp(2rem,6vw,5.5rem);font-weight:900;color:#fff;line-height:1.1}
+#s13 h2 em{color:var(--gold);font-style:normal}
+#s13 .end-sub{font-size:var(--body);color:rgba(255,255,255,.5);max-width:440px;line-height:1.7}
+#s13 .cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:clamp(4px,1vh,10px)}
+.cta-btn{display:inline-block;padding:clamp(8px,1.5vw,12px) clamp(20px,3vw,32px);border-radius:8px;font-weight:700;font-size:var(--body);text-decoration:none;transition:opacity .2s}
+.cta-primary{background:linear-gradient(135deg,var(--gold),#b8860b);color:#000}
+.cta-secondary{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15)}
 </style>
 </head>
 <body>
 
-<!-- PROGRESS BAR -->
-<div class="progress-bar" id="progressBar" style="width:8.33%"></div>
+<div id="prog" style="width:7.69%"></div>
+<nav id="dots"></nav>
 
-<!-- NAV DOTS -->
-<nav class="nav-dots" id="navDots" aria-label="幻灯片导航">
-  <!-- JS生成 -->
-</nav>
-
-<!-- ===================================
-     SLIDE 1 — 封面
-     =================================== -->
+<!-- ══════════ S1 · CINEMATIC COVER ══════════ -->
 <section class="slide" id="s1">
-  <div class="s1-bg">
-    <div class="s1-circle s1-c1"></div>
-    <div class="s1-circle s1-c2"></div>
-    <div class="s1-circle s1-c3"></div>
-    <div class="s1-grid"></div>
+  <div class="bg">
+    <div class="grid-bg"></div>
+    <img class="hero-img" src="images/characters/zhaoyun.webp" alt="">
+    <div class="smoke"></div>
   </div>
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor tr"></div>
-  <div class="corner-decor bl"></div>
-  <div class="corner-decor br"></div>
-
-  <div class="slide-content">
-    <div class="reveal"><span class="tag tag-gold">我的第一个游戏</span></div>
-    <div class="gold-line reveal reveal-delay-1"></div>
-    <h1 class="s1-title reveal reveal-delay-2">
-      我做了一款<br><span>三国游戏</span>
-    </h1>
-    <p class="s1-sub reveal reveal-delay-3">
-      一个12岁孩子的AI辅助开发故事<br>
-      从一个疯狂的想法，到真正上线的游戏 🎮
-    </p>
-    <div class="s1-author reveal reveal-delay-4">
-      <div class="s1-avatar">👦</div>
+  <div class="orn tl"></div><div class="orn tr"></div><div class="orn bl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="r eyebrow">一个12岁孩子的AI开发故事</div>
+    <div class="r d1"><span class="gline"></span></div>
+    <h1 class="r d2 serif">我做了一款<em>三国游戏</em></h1>
+    <p class="r d3 sub">从一个疯狂的想法开始<br>借助AI，真正做出了一款可以玩的游戏 🎮</p>
+    <div class="r d4 author-row">
+      <div class="ava">👦</div>
       <div>
-        <div class="s1-byline"><strong>12岁独立开发者</strong></div>
-        <div class="s1-byline">借助 Claude AI · 历时数周 · 全程自研</div>
+        <div class="byline"><strong>12岁独立开发者</strong></div>
+        <div class="byline">Claude Code · Supabase · Zeabur · GitHub · 全程AI辅助</div>
       </div>
     </div>
   </div>
-
-  <div class="s1-scroll-hint">
-    <span style="font-size:0.7rem;letter-spacing:1px;font-family:'Space Mono',monospace;color:var(--muted)">向下翻页</span>
-    <span>↓</span>
+  <div class="scroll">
+    <span>开始探索</span><span>↓</span>
   </div>
-  <div class="slide-num">01 / 12</div>
+  <div class="sn">01 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 2 — 起因与灵感
-     =================================== -->
+<!-- ══════════ S2 · 起因 ══════════ -->
 <section class="slide" id="s2">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content">
-    <div class="s2-layout">
-      <div class="s2-left">
-        <span class="tag tag-gold reveal">起因 · 灵感</span>
-        <h2 class="reveal reveal-delay-1">为什么要<br>做这个游戏？</h2>
-        <p class="reveal reveal-delay-2">
-          我超喜欢三国的故事，看了很多遍《三国演义》。
-          有一天我在想——为什么没有一个能<strong style="color:rgba(255,255,255,0.85)">边玩边学三国历史</strong>的游戏呢？
-        </p>
-        <div class="s2-quote-box reveal reveal-delay-3">
-          <p>「如果我自己不会写代码，但有AI帮我，我是不是也能做到？」</p>
-          <small>—— 某个周末的灵光一闪 💡</small>
-        </div>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="layout">
+    <div>
+      <span class="tag tg r">起因 · 灵感</span>
+      <h2 class="r d1">为什么要<br>做这个游戏？</h2>
+      <p class="r d2">我特别喜欢三国的故事。但我发现，市面上没有一个能让人<strong style="color:#fff">边玩边学三国历史</strong>的游戏。有一天，一个想法突然冒出来了……</p>
+      <div class="quote r d3">
+        <p>「我不会写代码，但AI会。<br>如果我告诉AI我想要什么，<br>它能帮我做出来吗？」</p>
+        <small>—— 某个周末的灵光一闪 💡</small>
       </div>
-      <div class="s2-right">
-        <div class="s2-card reveal reveal-delay-2">
-          <div class="s2-card-icon">📖</div>
-          <div class="s2-card-text">
-            <strong>来自三国故事的热爱</strong>
-            刘备、关羽、诸葛亮……这些人物太有魅力了，我想让更多同学也喜欢上历史
-          </div>
-        </div>
-        <div class="s2-card reveal reveal-delay-3">
-          <div class="s2-card-icon">🤖</div>
-          <div class="s2-card-text">
-            <strong>偶然发现了 Claude Code</strong>
-            一个可以帮你写代码的AI工具，我决定试试——它能真的帮我做出游戏吗？
-          </div>
-        </div>
-        <div class="s2-card reveal reveal-delay-4">
-          <div class="s2-card-icon">🎯</div>
-          <div class="s2-card-text">
-            <strong>目标：做一个能玩的真游戏</strong>
-            不是学校作业，是真正可以上线、可以分享给朋友玩的游戏
-          </div>
-        </div>
-        <div class="s2-card reveal reveal-delay-5">
-          <div class="s2-card-icon">😤</div>
-          <div class="s2-card-text">
-            <strong>身边人都觉得我做不到</strong>
-            "你又不会编程，怎么可能？" 这句话反而让我更想证明自己
-          </div>
-        </div>
+    </div>
+    <div>
+      <div class="reason-card r d1">
+        <div class="rc-icon">📖</div>
+        <div class="rc-body"><strong>三国故事的热爱</strong><p>刘备、关羽、诸葛亮……这些人物太有魅力了。我想让更多人喜欢上这段历史</p></div>
+      </div>
+      <div class="reason-card r d2">
+        <div class="rc-icon">🤖</div>
+        <div class="rc-body"><strong>发现了 Claude Code</strong><p>一个可以用对话方式写代码的AI工具。我决定试试——12岁也能做出游戏吗？</p></div>
+      </div>
+      <div class="reason-card r d3">
+        <div class="rc-icon">🎯</div>
+        <div class="rc-body"><strong>目标：真正能上线的游戏</strong><p>不是学校作业，是真正有网址、可以分享给朋友玩的完整游戏</p></div>
+      </div>
+      <div class="reason-card r d4">
+        <div class="rc-icon">😤</div>
+        <div class="rc-body"><strong>「你又不会编程，做不到的」</strong><p>身边人这样说。这反而让我更想证明：有AI的时代，年龄不是障碍</p></div>
       </div>
     </div>
   </div>
-  <div class="slide-num">02 / 12</div>
+  <div class="sn">02 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 3 — 第一步
-     =================================== -->
+<!-- ══════════ S3 · 关卡场景 ══════════ -->
 <section class="slide" id="s3">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content" style="align-items:center">
-    <div style="text-align:center;margin-bottom:var(--content-gap)">
-      <span class="tag tag-sky reveal">第一步</span>
-      <h2 class="reveal reveal-delay-1" style="font-family:'Noto Serif SC',serif;font-size:var(--h2-size);color:#fff;margin-top:var(--element-gap)">
-        从零开始，怎么迈出第一脚？🐾
-      </h2>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="head r">
+      <span class="tag tg">关卡世界</span>
+      <h2>12场经典战役 · 走遍三国大地 🗺️</h2>
     </div>
-    <div class="s3-timeline">
-      <div class="s3-step reveal reveal-delay-1">
-        <div class="s3-step-num">01</div>
-        <div class="s3-step-dot"></div>
-        <div class="s3-step-body">
-          <strong>打开 Claude Code，说出想法</strong>
-          <p>我用中文告诉AI："我想做一个三国题材的手机游戏，有卡牌对战、答题、探险……" AI直接开始帮我搭框架</p>
-          <span class="s3-code-chip">index.html + js/ + data/</span>
-        </div>
+    <div class="scene-grid">
+      <div class="scene-cell big r d1">
+        <img src="images/scenes/chibi.webp" alt="赤壁之战">
+        <span class="sc-kingdom sc-wu">吴</span>
+        <div class="sc-label">⑥ 赤壁之战 · 火烧连环船，三国鼎立</div>
       </div>
-      <div class="s3-step reveal reveal-delay-2">
-        <div class="s3-step-num">02</div>
-        <div class="s3-step-dot"></div>
-        <div class="s3-step-body">
-          <strong>第一版：只有一个首页</strong>
-          <p>我把文件在浏览器里打开，真的出现了界面！虽然什么功能都没有，但我兴奋得跳起来了</p>
-        </div>
+      <div class="scene-cell r d1">
+        <img src="images/scenes/taoyuan.webp" alt="涿郡起兵">
+        <span class="sc-kingdom sc-shu">蜀</span>
+        <div class="sc-label">① 涿郡起兵</div>
       </div>
-      <div class="s3-step reveal reveal-delay-3">
-        <div class="s3-step-num">03</div>
-        <div class="s3-step-dot"></div>
-        <div class="s3-step-body">
-          <strong>学会了"提需求"这件事</strong>
-          <p>不是让AI写代码，而是告诉它我想要什么体验——"我希望点这个按钮后出现动画，感觉要爽"</p>
-        </div>
+      <div class="scene-cell r d2">
+        <img src="images/scenes/guandu.webp" alt="官渡之战">
+        <span class="sc-kingdom sc-wei">魏</span>
+        <div class="sc-label">④ 官渡之战</div>
       </div>
-      <div class="s3-step reveal reveal-delay-4">
-        <div class="s3-step-num">04</div>
-        <div class="s3-step-dot"></div>
-        <div class="s3-step-body">
-          <strong>部署到 Zeabur，让朋友能玩到</strong>
-          <p>把代码传到 GitHub，连接 Zeabur 云平台，游戏有了真正的网址 🎉</p>
-          <span class="s3-code-chip">GitHub → Zeabur 自动部署</span>
-        </div>
+      <div class="scene-cell r d1">
+        <img src="images/scenes/changbanpo.webp" alt="长坂坡">
+        <span class="sc-kingdom sc-shu">蜀</span>
+        <div class="sc-label">⑤ 长坂坡</div>
+      </div>
+      <div class="scene-cell r d2">
+        <img src="images/scenes/caochuan.webp" alt="草船借箭">
+        <span class="sc-kingdom sc-wu">吴</span>
+        <div class="sc-label">⑦ 草船借箭</div>
+      </div>
+      <div class="scene-cell r d3">
+        <img src="images/scenes/huoshao.webp" alt="火烧连营">
+        <span class="sc-kingdom sc-wu">吴</span>
+        <div class="sc-label">⑪ 火烧连营</div>
+      </div>
+      <div class="scene-cell r d2">
+        <img src="images/scenes/kongchengji.webp" alt="空城计">
+        <span class="sc-kingdom sc-shu">蜀</span>
+        <div class="sc-label">⑨ 空城计</div>
+      </div>
+      <div class="scene-cell r d3">
+        <img src="images/scenes/sangumaolu.webp" alt="三顾茅庐">
+        <span class="sc-kingdom sc-shu">蜀</span>
+        <div class="sc-label">③ 三顾茅庐</div>
+      </div>
+      <div class="scene-cell r d4">
+        <img src="images/scenes/guijin.webp" alt="七擒孟获">
+        <span class="sc-kingdom sc-shu">蜀</span>
+        <div class="sc-label">⑩ 七擒孟获</div>
       </div>
     </div>
   </div>
-  <div class="slide-num">03 / 12</div>
+  <div class="sn">03 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 4 — 功能建设
-     =================================== -->
+<!-- ══════════ S4 · 武将图鉴 ══════════ -->
 <section class="slide" id="s4">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content" style="align-items:center">
-    <div style="text-align:center;margin-bottom:clamp(8px,1.5vh,16px)">
-      <span class="tag tag-jade reveal">功能建设</span>
-      <h2 class="reveal reveal-delay-1" style="font-family:'Noto Serif SC',serif;font-size:var(--h2-size);color:#fff;margin-top:var(--element-gap)">
-        一点一点加进来，越来越好玩 🏗️
-      </h2>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="head r">
+      <span class="tag tg">武将图鉴</span>
+      <h2>36位历史武将 · 三国群英齐聚 ⚔️</h2>
     </div>
-    <div class="s4-grid">
-      <div class="s4-card reveal reveal-delay-1" style="--card-accent:var(--red)">
-        <div class="s4-card-icon">⚔️</div>
-        <div class="s4-card-title">回合制对战</div>
-        <div class="s4-card-desc">武将卡牌 · 攻防计算 · 战斗动画</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-1" style="--card-accent:var(--gold)">
-        <div class="s4-card-icon">🎴</div>
-        <div class="s4-card-title">抽卡系统</div>
-        <div class="s4-card-desc">保底机制 · 稀有度 · 粒子动画</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-2" style="--card-accent:var(--sky)">
-        <div class="s4-card-icon">📚</div>
-        <div class="s4-card-title">答题系统</div>
-        <div class="s4-card-desc">三国历史题库 · 积分奖励</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-2" style="--card-accent:var(--jade)">
-        <div class="s4-card-icon">🗺️</div>
-        <div class="s4-card-title">关卡地图</div>
-        <div class="s4-card-desc">12关 · 普通/精英/传说三难度</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-3" style="--card-accent:#9c27b0">
-        <div class="s4-card-icon">🏰</div>
-        <div class="s4-card-title">探险地牢</div>
-        <div class="s4-card-desc">连线配对 · Boss战 · 层数排行</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-3" style="--card-accent:#e67e22">
-        <div class="s4-card-icon">🎲</div>
-        <div class="s4-card-title">大富翁地图</div>
-        <div class="s4-card-desc">三国城市格子 · 金币系统</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-4" style="--card-accent:var(--red)">
-        <div class="s4-card-icon">❤️</div>
-        <div class="s4-card-title">体力系统</div>
-        <div class="s4-card-desc">上限10点 · 每10分钟恢复1点</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-4" style="--card-accent:var(--gold)">
-        <div class="s4-card-icon">🏆</div>
-        <div class="s4-card-title">双榜排行</div>
-        <div class="s4-card-desc">战力榜 + 探险层数榜</div>
-      </div>
-      <div class="s4-card reveal reveal-delay-5" style="--card-accent:var(--sky)">
-        <div class="s4-card-icon">☁️</div>
-        <div class="s4-card-title">云端存档</div>
-        <div class="s4-card-desc">Supabase · 多设备同步</div>
-      </div>
+    <div class="char-strip r d1">
+      <!-- 魏 -->
+      <div class="char-card"><img src="images/cardart/caocao.webp" alt="曹操"><div class="rarity-bar rb-legend"></div><div class="kingdom-dot" style="background:var(--wei)"></div><div class="cname">曹操</div></div>
+      <div class="char-card"><img src="images/cardart/simayi.webp" alt="司马懿"><div class="rarity-bar rb-legend"></div><div class="kingdom-dot" style="background:var(--wei)"></div><div class="cname">司马懿</div></div>
+      <div class="char-card"><img src="images/cardart/guojia.webp" alt="郭嘉"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--wei)"></div><div class="cname">郭嘉</div></div>
+      <div class="char-card"><img src="images/cardart/zhangliao.webp" alt="张辽"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--wei)"></div><div class="cname">张辽</div></div>
+      <div class="char-card"><img src="images/cardart/xiahoudun.webp" alt="夏侯惇"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--wei)"></div><div class="cname">夏侯惇</div></div>
+      <div class="char-card"><img src="images/cardart/dianwei.webp" alt="典韦"><div class="rarity-bar rb-common"></div><div class="kingdom-dot" style="background:var(--wei)"></div><div class="cname">典韦</div></div>
+      <!-- 蜀 -->
+      <div class="char-card"><img src="images/cardart/zhugeliang.webp" alt="诸葛亮"><div class="rarity-bar rb-legend"></div><div class="kingdom-dot" style="background:var(--shu)"></div><div class="cname">诸葛亮</div></div>
+      <div class="char-card"><img src="images/cardart/guanyu.webp" alt="关羽"><div class="rarity-bar rb-legend"></div><div class="kingdom-dot" style="background:var(--shu)"></div><div class="cname">关羽</div></div>
+      <div class="char-card"><img src="images/cardart/zhaoyun.webp" alt="赵云"><div class="rarity-bar rb-legend"></div><div class="kingdom-dot" style="background:var(--shu)"></div><div class="cname">赵云</div></div>
+      <div class="char-card"><img src="images/cardart/liubei.webp" alt="刘备"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--shu)"></div><div class="cname">刘备</div></div>
+      <div class="char-card"><img src="images/cardart/zhangfei.webp" alt="张飞"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--shu)"></div><div class="cname">张飞</div></div>
+      <div class="char-card"><img src="images/cardart/machao.webp" alt="马超"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--shu)"></div><div class="cname">马超</div></div>
+      <!-- 吴 -->
+      <div class="char-card"><img src="images/cardart/zhouyu.webp" alt="周瑜"><div class="rarity-bar rb-legend"></div><div class="kingdom-dot" style="background:var(--wu)"></div><div class="cname">周瑜</div></div>
+      <div class="char-card"><img src="images/cardart/sunquan.webp" alt="孙权"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--wu)"></div><div class="cname">孙权</div></div>
+      <div class="char-card"><img src="images/cardart/luxun.webp" alt="陆逊"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--wu)"></div><div class="cname">陆逊</div></div>
+      <div class="char-card"><img src="images/cardart/ganning.webp" alt="甘宁"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--wu)"></div><div class="cname">甘宁</div></div>
+      <div class="char-card"><img src="images/cardart/huanggai.webp" alt="黄盖"><div class="rarity-bar rb-common"></div><div class="kingdom-dot" style="background:var(--wu)"></div><div class="cname">黄盖</div></div>
+      <div class="char-card"><img src="images/cardart/lvmeng.webp" alt="吕蒙"><div class="rarity-bar rb-rare"></div><div class="kingdom-dot" style="background:var(--wu)"></div><div class="cname">吕蒙</div></div>
+    </div>
+    <div class="legend-row r d2">
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#f0c84a,#c9a227)"></div>传说</div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#4a90d9,#64b4f6)"></div>稀有</div>
+      <div class="legend-item"><div class="legend-dot" style="background:linear-gradient(135deg,#2ecc8f,#6ee5b7)"></div>普通</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--wei)"></div>魏</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--shu)"></div>蜀</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--wu)"></div>吴</div>
     </div>
   </div>
-  <div class="slide-num">04 / 12</div>
+  <div class="sn">04 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 5 — 遇到的坑
-     =================================== -->
+<!-- ══════════ S5 · 功能模块 ══════════ -->
 <section class="slide" id="s5">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content" style="align-items:center">
-    <div class="s5-header">
-      <span class="tag tag-red reveal">真实的坑</span>
-      <h2 class="reveal reveal-delay-1">当然，我遇到了好多问题… 😭</h2>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="r">
+      <span class="tag tj">功能全览</span>
     </div>
-    <div class="s5-bugs">
-      <div class="s5-bug reveal reveal-delay-1">
-        <div class="s5-bug-num">01</div>
-        <div class="s5-bug-body">
-          <strong>🚀 部署失败！网站打不开</strong>
-          <p>nginx端口配置成了8080，但Zeabur期望的不是这个。把链接发给朋友，结果全是404错误页面</p>
-          <span class="s5-bug-fix">→ 修改 nginx.conf 监听端口</span>
-        </div>
+    <h2 class="r d1">从零到九大系统，一步一步搭起来 🏗️</h2>
+    <div class="mod-grid">
+      <div class="mod-card r d1" style="--mc:var(--red2)">
+        <div><div class="mc-icon">⚔️</div><div class="mc-title">回合制对战</div><div class="mc-desc">武将出招，攻防计算，战斗动画。普通/精英/传说三档难度，NPC强度递增</div></div>
+        <span class="mc-badge">battle.js</span>
       </div>
-      <div class="s5-bug reveal reveal-delay-2">
-        <div class="s5-bug-num">02</div>
-        <div class="s5-bug-body">
-          <strong>📱 手机上页面全乱了</strong>
-          <p>在电脑上好好的，在手机上内容全被截断。还要兼容微信内置浏览器，各种奇怪问题</p>
-          <span class="s5-bug-fix">→ 响应式CSS，clamp()适配</span>
-        </div>
+      <div class="mod-card r d1" style="--mc:var(--gold)">
+        <div><div class="mc-icon">🎴</div><div class="mc-title">抽卡系统</div><div class="mc-desc">三种稀有度，保底机制，进度条显示，翻牌动画+粒子特效</div></div>
+        <span class="mc-badge">gacha.js</span>
       </div>
-      <div class="s5-bug reveal reveal-delay-2">
-        <div class="s5-bug-num">03</div>
-        <div class="s5-bug-body">
-          <strong>🗄️ 数据库权限不够</strong>
-          <p>想给探险排行榜加新字段，发现只有anon密钥根本没有DDL权限，SQL语句全部报错</p>
-          <span class="s5-bug-fix">→ 改从已有JSON字段中读取数据</span>
-        </div>
+      <div class="mod-card r d2" style="--mc:var(--sky)">
+        <div><div class="mc-icon">📚</div><div class="mc-title">答题系统</div><div class="mc-desc">100+道三国历史题目，答对获得抽卡积分，学习与游戏结合</div></div>
+        <span class="mc-badge">quiz.js</span>
       </div>
-      <div class="s5-bug reveal reveal-delay-3">
-        <div class="s5-bug-num">04</div>
-        <div class="s5-bug-body">
-          <strong>💾 刷新一下进度全没了</strong>
-          <p>云端同步逻辑写错了，每次刷新页面就从云端拿旧数据覆盖本地，所有努力白费！</p>
-          <span class="s5-bug-fix">→ 时间戳比较，本地优先策略</span>
-        </div>
+      <div class="mod-card r d2" style="--mc:var(--jade)">
+        <div><div class="mc-icon">🏰</div><div class="mc-title">探险地牢</div><div class="mc-desc">连线配对小游戏，越深越难，层数排行榜，Boss战爆装备</div></div>
+        <span class="mc-badge">dungeon.js</span>
       </div>
-      <div class="s5-bug reveal reveal-delay-4">
-        <div class="s5-bug-num">05</div>
-        <div class="s5-bug-body">
-          <strong>⏱️ 体力回满时间显示乱码</strong>
-          <p>访问静态类属性返回了undefined，计算出一个奇怪的时间数字。找了好久才发现</p>
-          <span class="s5-bug-fix">→ 改用本地常量 const REGEN_MS</span>
-        </div>
+      <div class="mod-card r d3" style="--mc:#e67e22">
+        <div><div class="mc-icon">🎲</div><div class="mc-title">大富翁地图</div><div class="mc-desc">三国城市格子，掷骰子走格，触发事件获得金币，升级武将</div></div>
+        <span class="mc-badge">monopoly.js</span>
       </div>
-      <div class="s5-bug reveal reveal-delay-5">
-        <div class="s5-bug-num">06</div>
-        <div class="s5-bug-body">
-          <strong>🎴 新动画没有生效</strong>
-          <p>代码明明写好了，但刷新网页还是旧版本。搞了半天才发现是Zeabur没有重新部署</p>
-          <span class="s5-bug-fix">→ 用空commit强制触发webhook</span>
-        </div>
+      <div class="mod-card r d3" style="--mc:var(--red)">
+        <div><div class="mc-icon">❤️</div><div class="mc-title">体力系统</div><div class="mc-desc">上限10点，每10分钟恢复1点，首页实时倒计时显示回满时间</div></div>
+        <span class="mc-badge">stamina.js</span>
+      </div>
+      <div class="mod-card r d4" style="--mc:#9c27b0">
+        <div><div class="mc-icon">⚡</div><div class="mc-title">扫荡系统</div><div class="mc-desc">三星通关后解锁，每日最多10次，批量扫荡领取积分奖励</div></div>
+        <span class="mc-badge">map.js</span>
+      </div>
+      <div class="mod-card r d4" style="--mc:var(--gold)">
+        <div><div class="mc-icon">🏆</div><div class="mc-title">双榜排行</div><div class="mc-desc">战力排行榜 + 探险层数榜，所有玩家同台竞技，云端实时更新</div></div>
+        <span class="mc-badge">leaderboard.js</span>
+      </div>
+      <div class="mod-card r d5" style="--mc:var(--sky)">
+        <div><div class="mc-icon">☁️</div><div class="mc-title">云端存档</div><div class="mc-desc">Supabase数据库，多设备同步，时间戳策略确保进度不丢失</div></div>
+        <span class="mc-badge">auth.js</span>
       </div>
     </div>
   </div>
-  <div class="slide-num">05 / 12</div>
+  <div class="sn">05 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 6 — AI工具
-     =================================== -->
+<!-- ══════════ S6 · 技术架构 ══════════ -->
 <section class="slide" id="s6">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content">
-    <div class="s6-layout">
-      <div class="s6-left">
-        <span class="tag tag-sky reveal">AI的力量</span>
-        <h2 class="reveal reveal-delay-1">
-          没有AI，<br>这一切都不会发生
-        </h2>
-        <p class="reveal reveal-delay-2">
-          我不懂 JavaScript，不懂 CSS，不懂服务器……
-          但我知道我想要什么。AI把我的想法变成了真实的代码。
-        </p>
-        <div class="s6-quote reveal reveal-delay-3">
-          「我负责想象，AI负责实现，但理解这两件事之间的桥梁，是我自己建的」
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="r"><span class="tag tg">技术架构</span></div>
+    <h2 class="r d1">游戏是怎么搭起来的？🔧</h2>
+    <div class="arch-layers">
+      <div class="arch-row r d1">
+        <div class="arch-label">用户</div>
+        <div class="arch-boxes">
+          <span class="abox ab-ui">手机浏览器</span>
+          <span class="abox ab-ui">桌面浏览器</span>
+          <span class="abox ab-ui">微信内置浏览器</span>
         </div>
       </div>
-      <div class="s6-tools">
-        <div class="s6-tool reveal reveal-delay-1">
-          <div class="s6-tool-icon">🤖</div>
-          <div class="s6-tool-body">
-            <div class="s6-tool-name">Claude Code（主力工具）</div>
-            <div class="s6-tool-desc">全程AI辅助编程——写代码、调试、架构设计、解释报错</div>
-            <div class="s6-tool-tags">
-              <span class="s6-tag">代码生成</span>
-              <span class="s6-tag">调试诊断</span>
-              <span class="s6-tag">架构设计</span>
-              <span class="s6-tag">实时问答</span>
-            </div>
-          </div>
+      <div class="arch-arrow r d1">↓</div>
+      <div class="arch-row r d2">
+        <div class="arch-label">界面层</div>
+        <div class="arch-boxes">
+          <span class="abox ab-ui">HTML5 + CSS3</span>
+          <span class="abox ab-ui">响应式设计</span>
+          <span class="abox ab-ui">CSS动画</span>
+          <span class="abox ab-ui">clamp()适配</span>
         </div>
-        <div class="s6-tool reveal reveal-delay-2">
-          <div class="s6-tool-icon">🧠</div>
-          <div class="s6-tool-body">
-            <div class="s6-tool-name">Claude Sonnet 4.6 模型</div>
-            <div class="s6-tool-desc">理解我用中文描述的功能需求，转化为可运行的代码</div>
-            <div class="s6-tool-tags">
-              <span class="s6-tag">中文理解</span>
-              <span class="s6-tag">需求转化</span>
-              <span class="s6-tag">多轮对话</span>
-            </div>
-          </div>
+      </div>
+      <div class="arch-arrow r d2">↓</div>
+      <div class="arch-row r d3">
+        <div class="arch-label">逻辑层</div>
+        <div class="arch-boxes">
+          <span class="abox ab-js">ES模块</span>
+          <span class="abox ab-js">state.js 状态管理</span>
+          <span class="abox ab-js">battle / gacha / dungeon</span>
+          <span class="abox ab-js">localStorage 本地存档</span>
         </div>
-        <div class="s6-tool reveal reveal-delay-3">
-          <div class="s6-tool-icon">🗄️</div>
-          <div class="s6-tool-body">
-            <div class="s6-tool-name">Supabase（云数据库）</div>
-            <div class="s6-tool-desc">存储玩家存档和排行榜数据，让游戏可以多设备同步</div>
-            <div class="s6-tool-tags">
-              <span class="s6-tag">REST API</span>
-              <span class="s6-tag">云存档</span>
-              <span class="s6-tag">排行榜</span>
-            </div>
-          </div>
+      </div>
+      <div class="arch-arrow r d3">↓</div>
+      <div class="arch-row r d4">
+        <div class="arch-label">数据层</div>
+        <div class="arch-boxes">
+          <span class="abox ab-db">Supabase REST API</span>
+          <span class="abox ab-db">云端存档</span>
+          <span class="abox ab-db">排行榜</span>
+          <span class="abox ab-db">时间戳同步策略</span>
         </div>
-        <div class="s6-tool reveal reveal-delay-4">
-          <div class="s6-tool-icon">🚀</div>
-          <div class="s6-tool-body">
-            <div class="s6-tool-name">GitHub + Zeabur（自动部署）</div>
-            <div class="s6-tool-desc">代码一推送，网站自动更新——像魔法一样！</div>
-            <div class="s6-tool-tags">
-              <span class="s6-tag">版本控制</span>
-              <span class="s6-tag">自动部署</span>
-              <span class="s6-tag">Webhook</span>
-            </div>
-          </div>
+      </div>
+      <div class="arch-arrow r d4">↓</div>
+      <div class="arch-row r d5">
+        <div class="arch-label">部署</div>
+        <div class="arch-boxes">
+          <span class="abox ab-inf">GitHub 仓库</span>
+          <span class="abox ab-inf">Docker + Nginx</span>
+          <span class="abox ab-inf">Zeabur 云平台</span>
+          <span class="abox ab-inf">Webhook 自动部署</span>
+          <span class="abox ab-ai">Claude Code AI</span>
         </div>
       </div>
     </div>
+    <div class="arch-foot r d6">零框架 · 零构建工具 · 纯原生 Web · 25+ 个 JS 模块</div>
   </div>
-  <div class="slide-num">06 / 12</div>
+  <div class="sn">06 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 7 — 架构图
-     =================================== -->
+<!-- ══════════ S7 · AI工具 ══════════ -->
 <section class="slide" id="s7">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content" style="align-items:center">
-    <div class="s7-header">
-      <span class="tag tag-gold reveal">技术架构</span>
-      <h2 class="reveal reveal-delay-1">游戏是怎么搭起来的？🏗️</h2>
-    </div>
-    <div class="s7-arch">
-      <div class="s7-layer reveal reveal-delay-1">
-        <div class="s7-layer-label">用户层</div>
-        <div class="s7-layer-content">
-          <span class="s7-box ui">手机浏览器</span>
-          <span class="s7-box ui">桌面浏览器</span>
-          <span class="s7-box ui">微信内置浏览器</span>
-        </div>
-      </div>
-      <div class="s7-arrow reveal reveal-delay-1">↓ ↓ ↓</div>
-      <div class="s7-layer reveal reveal-delay-2">
-        <div class="s7-layer-label">前端</div>
-        <div class="s7-layer-content">
-          <span class="s7-box ui">HTML / CSS</span>
-          <span class="s7-box logic">JavaScript ES模块</span>
-          <span class="s7-box logic">game state</span>
-          <span class="s7-box logic">localStorage 存档</span>
-        </div>
-      </div>
-      <div class="s7-arrow reveal reveal-delay-2">↓ ↓ ↓</div>
-      <div class="s7-layer reveal reveal-delay-3">
-        <div class="s7-layer-label">游戏模块</div>
-        <div class="s7-layer-content">
-          <span class="s7-box logic">battle.js</span>
-          <span class="s7-box logic">gacha.js</span>
-          <span class="s7-box logic">dungeon.js</span>
-          <span class="s7-box logic">map.js</span>
-          <span class="s7-box logic">quiz.js</span>
-          <span class="s7-box logic">auth.js</span>
-        </div>
-      </div>
-      <div class="s7-arrow reveal reveal-delay-3">↓ ↓ ↓</div>
-      <div class="s7-layer reveal reveal-delay-4">
-        <div class="s7-layer-label">数据层</div>
-        <div class="s7-layer-content">
-          <span class="s7-box data">Supabase REST API</span>
-          <span class="s7-box data">云端存档</span>
-          <span class="s7-box data">排行榜</span>
-        </div>
-      </div>
-      <div class="s7-arrow reveal reveal-delay-4">↓ ↓ ↓</div>
-      <div class="s7-layer reveal reveal-delay-5">
-        <div class="s7-layer-label">部署</div>
-        <div class="s7-layer-content">
-          <span class="s7-box infra">GitHub 仓库</span>
-          <span class="s7-box infra">Docker + Nginx</span>
-          <span class="s7-box infra">Zeabur 云平台</span>
-          <span class="s7-box ai">Claude Code AI</span>
-        </div>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="layout">
+    <div>
+      <span class="tag ts r">AI的力量</span>
+      <h2 class="r d1">没有AI，<br>这一切都不会发生</h2>
+      <p class="lead r d2">我不懂 JavaScript，不懂服务器，不懂数据库。但我知道我想要什么体验。AI把我用中文描述的想法，一行一行变成可以运行的代码。</p>
+      <div class="big-quote r d3">
+        「我负责<strong style="color:#fff">想象</strong>，AI负责<strong style="color:#fff">实现</strong>，而理解它们之间的桥梁，是我自己建的」
       </div>
     </div>
-    <div class="s7-footer-note reveal reveal-delay-6">零框架 · 零构建工具 · 纯原生 Web 技术</div>
+    <div>
+      <div class="ai-tool r d1">
+        <div class="at-icon">🤖</div>
+        <div><div class="at-name">Claude Code（主力工具）</div><div class="at-desc">全程AI辅助——写代码、修Bug、设计架构、解释报错、优化UI</div><div class="at-tags"><span class="at-tag">代码生成</span><span class="at-tag">调试诊断</span><span class="at-tag">架构设计</span><span class="at-tag">中文理解</span><span class="at-tag">多轮对话</span></div></div>
+      </div>
+      <div class="ai-tool r d2">
+        <div class="at-icon">🧠</div>
+        <div><div class="at-name">Claude Sonnet 4.6 模型</div><div class="at-desc">理解我对功能体验的描述，转化为可运行的模块化代码</div><div class="at-tags"><span class="at-tag">需求转化</span><span class="at-tag">ES模块设计</span><span class="at-tag">CSS动画</span></div></div>
+      </div>
+      <div class="ai-tool r d3">
+        <div class="at-icon">🗄️</div>
+        <div><div class="at-name">Supabase（云数据库）</div><div class="at-desc">存储玩家数据和排行榜，AI帮我设计了同步策略和API调用</div><div class="at-tags"><span class="at-tag">REST API</span><span class="at-tag">云存档</span><span class="at-tag">排行榜</span></div></div>
+      </div>
+      <div class="ai-tool r d4">
+        <div class="at-icon">🚀</div>
+        <div><div class="at-name">GitHub + Zeabur（自动部署）</div><div class="at-desc">代码一推送，5分钟内网站自动更新。AI帮我写了 Dockerfile 和 nginx 配置</div><div class="at-tags"><span class="at-tag">Docker</span><span class="at-tag">Nginx</span><span class="at-tag">Webhook</span><span class="at-tag">CI/CD</span></div></div>
+      </div>
+    </div>
   </div>
-  <div class="slide-num">07 / 12</div>
+  <div class="sn">07 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 8 — 数字成就
-     =================================== -->
+<!-- ══════════ S8 · 遇到的坑 ══════════ -->
 <section class="slide" id="s8">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content" style="align-items:center">
-    <div class="s8-header">
-      <span class="tag tag-gold reveal">成果数字</span>
-      <h2 class="reveal reveal-delay-1">最终做出来了什么？📊</h2>
-    </div>
-    <div class="s8-stats">
-      <div class="s8-stat reveal reveal-delay-1" style="--stat-color:var(--gold2)">
-        <div class="s8-stat-emoji">🎮</div>
-        <div class="s8-stat-num">12</div>
-        <div class="s8-stat-label">个关卡<br>三种难度</div>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="r"><span class="tag tr">真实踩坑</span></div>
+    <h2 class="r d1">当然，我遇到了好多崩溃的时刻… 😭</h2>
+    <div class="bugs">
+      <div class="bug-card r d1">
+        <div class="bug-num">01</div>
+        <div><span class="bug-title">🚀 部署失败！朋友打开全是404</span><div class="bug-desc">nginx配置监听了8080端口，但Zeabur期望的端口不对，网站完全打不开。把链接发给同学，他们全说"你的网站坏了"</div><span class="bug-fix">→ 修改 nginx.conf 端口配置</span></div>
       </div>
-      <div class="s8-stat reveal reveal-delay-1" style="--stat-color:#ff9d90">
-        <div class="s8-stat-emoji">👥</div>
-        <div class="s8-stat-num">20+</div>
-        <div class="s8-stat-label">个三国武将<br>各有专属属性</div>
+      <div class="bug-card r d2">
+        <div class="bug-num">02</div>
+        <div><span class="bug-title">📱 手机上页面全乱了</span><div class="bug-desc">电脑上好好的，在手机里内容全被截断。微信浏览器更奇怪，底部导航被遮住，顶部被刘海挡住</div><span class="bug-fix">→ 响应式CSS + safe-area-inset适配</span></div>
       </div>
-      <div class="s8-stat reveal reveal-delay-2" style="--stat-color:var(--sky)">
-        <div class="s8-stat-emoji">📝</div>
-        <div class="s8-stat-num">100+</div>
-        <div class="s8-stat-label">道三国历史<br>答题题目</div>
+      <div class="bug-card r d2">
+        <div class="bug-num">03</div>
+        <div><span class="bug-title">🗄️ 想加数据库字段，权限不够</span><div class="bug-desc">探险排行榜想加"达成时间"字段，用SQL执行后全是权限报错。发现anon key根本没有DDL权限，白忙一场</div><span class="bug-fix">→ 改从 game_data JSON 字段读取</span></div>
       </div>
-      <div class="s8-stat reveal reveal-delay-2" style="--stat-color:var(--jade)">
-        <div class="s8-stat-emoji">📁</div>
-        <div class="s8-stat-num">25+</div>
-        <div class="s8-stat-label">个JS模块<br>功能清晰分离</div>
+      <div class="bug-card r d3">
+        <div class="bug-num">04</div>
+        <div><span class="bug-title">💾 刷新一次，进度全消失了</span><div class="bug-desc">云端同步逻辑写反了，每次刷新都从云端拉旧数据覆盖本地。打了两小时的关卡进度，刷新一下全没了。这是最崩溃的一次</div><span class="bug-fix">→ 时间戳比较，本地优先策略</span></div>
       </div>
-      <div class="s8-stat reveal reveal-delay-3" style="--stat-color:#d89ef7">
-        <div class="s8-stat-emoji">🔧</div>
-        <div class="s8-stat-num">50+</div>
-        <div class="s8-stat-label">次 git commit<br>记录每一步成长</div>
+      <div class="bug-card r d4">
+        <div class="bug-num">05</div>
+        <div><span class="bug-title">⏱️ 体力回满时间显示乱码</span><div class="bug-desc">访问静态类属性时返回undefined，导致计算出一个几百万分钟的奇怪时间。找了很久才发现是JavaScript静态字段的兼容问题</div><span class="bug-fix">→ 改用本地 const REGEN_MS</span></div>
       </div>
-      <div class="s8-stat reveal reveal-delay-3" style="--stat-color:var(--gold2)">
-        <div class="s8-stat-emoji">🌐</div>
-        <div class="s8-stat-num">1</div>
-        <div class="s8-stat-label">个真实上线的<br>游戏网址</div>
+      <div class="bug-card r d5">
+        <div class="bug-num">06</div>
+        <div><span class="bug-title">🎴 新做的抽卡动画，网页没有变</span><div class="bug-desc">代码明明改好了，push到GitHub了，但打开网页还是旧版本。盯着屏幕研究了半小时，才发现是Zeabur没有重新触发部署</div><span class="bug-fix">→ 空commit触发webhook重部署</span></div>
       </div>
     </div>
   </div>
-  <div class="slide-num">08 / 12</div>
+  <div class="sn">08 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 9 — 心路历程
-     =================================== -->
+<!-- ══════════ S9 · 心路历程 ══════════ -->
 <section class="slide" id="s9">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content">
-    <div style="text-align:center;margin-bottom:var(--content-gap)">
-      <span class="tag tag-red reveal">心路历程</span>
-      <h2 class="reveal reveal-delay-1" style="font-family:'Noto Serif SC',serif;font-size:var(--h2-size);color:#fff;margin-top:var(--element-gap)">
-        那些开心和沮丧的时刻 💭
-      </h2>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div style="height:100%;display:flex;flex-direction:column;padding:var(--pad);gap:clamp(8px,1.2vh,14px)">
+    <div class="r" style="text-align:center;flex-shrink:0">
+      <span class="tag tg">心路历程</span>
+      <h2 class="serif" style="font-size:var(--h2);color:#fff;margin-top:8px">那些开心和崩溃的时刻 💭</h2>
     </div>
-    <div class="s9-layout">
+    <div class="layout" style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);align-items:start">
       <div>
-        <div class="s9-col-title" style="color:var(--jade)">✨ 最开心的时刻</div>
-        <div class="s9-moments">
-          <div class="s9-moment reveal reveal-delay-1">
-            <div class="s9-moment-emoji">🎉</div>
-            <div class="s9-moment-text">
-              <strong>第一次打开网页，看到自己做的界面</strong>
-              当时感觉自己像个超级程序员，拍了好多截图发给爸妈
-            </div>
-          </div>
-          <div class="s9-moment reveal reveal-delay-2">
-            <div class="s9-moment-emoji">⚔️</div>
-            <div class="s9-moment-text">
-              <strong>第一场对战终于能打了</strong>
-              武将出招，血量扣减，战斗动画出现——这感觉真的太酷了！
-            </div>
-          </div>
-          <div class="s9-moment reveal reveal-delay-3">
-            <div class="s9-moment-emoji">🏆</div>
-            <div class="s9-moment-text">
-              <strong>朋友在排行榜上打败了我</strong>
-              自己做的游戏被朋友认真玩，这是最有成就感的一刻
-            </div>
-          </div>
+        <div class="emo-head" style="color:var(--jade)">✨ 最开心的时刻</div>
+        <div class="emo-cards">
+          <div class="emo-card r d1"><div class="emo-icon">🎉</div><div><span class="emo-title">第一次打开网页，看到自己做的界面</span><div class="emo-text">当时感觉自己像个超级程序员。虽然只是一个空框架，但那是我做的！立刻截图发给爸妈</div></div></div>
+          <div class="emo-card r d2"><div class="emo-icon">⚔️</div><div><span class="emo-title">第一场对战终于能打起来了</span><div class="emo-text">武将出招，血条扣减，胜利动画出现。我反复点了十几次，每次都觉得不可思议</div></div></div>
+          <div class="emo-card r d3"><div class="emo-icon">🏆</div><div><span class="emo-title">朋友在排行榜上打败了我</span><div class="emo-text">自己做的游戏，被朋友认真玩，认真竞争——这是整个项目最有成就感的一刻</div></div></div>
+          <div class="emo-card r d4"><div class="emo-icon">🎴</div><div><span class="emo-title">抽卡动画加上粒子特效那一刻</span><div class="emo-text">金色粒子飞出来，卡牌翻转，感觉瞬间从"学生作品"升级成了"真正的游戏"</div></div></div>
         </div>
       </div>
       <div>
-        <div class="s9-col-title" style="color:var(--red)">😤 最崩溃的时刻</div>
-        <div class="s9-moments">
-          <div class="s9-moment reveal reveal-delay-1">
-            <div class="s9-moment-emoji">😭</div>
-            <div class="s9-moment-text">
-              <strong>努力了半天，刷新后全没了</strong>
-              存档同步逻辑错了，打了好多关卡的进度全部清零，差点想放弃
-            </div>
-          </div>
-          <div class="s9-moment reveal reveal-delay-2">
-            <div class="s9-moment-emoji">🤯</div>
-            <div class="s9-moment-text">
-              <strong>明明改了代码，网页没有变化</strong>
-              盯着屏幕半小时以为自己眼花，结果是Zeabur没有重新部署
-            </div>
-          </div>
-          <div class="s9-moment reveal reveal-delay-3">
-            <div class="s9-moment-emoji">😤</div>
-            <div class="s9-moment-text">
-              <strong>第一次看到满屏报错信息</strong>
-              全是英文的错误，完全看不懂……后来才学会把它们丢给AI解释
-            </div>
-          </div>
+        <div class="emo-head" style="color:var(--red2)">😤 最崩溃的时刻</div>
+        <div class="emo-cards">
+          <div class="emo-card r d1"><div class="emo-icon">😭</div><div><span class="emo-title">努力了半天，刷新后全没了</span><div class="emo-text">存档同步逻辑写错，两小时的关卡进度全部清零。差点真的想放弃这个项目</div></div></div>
+          <div class="emo-card r d2"><div class="emo-icon">🤯</div><div><span class="emo-title">代码改好了，网页没有变化</span><div class="emo-text">盯着屏幕半小时，怀疑自己是不是眼花，后来才知道是部署没触发。那种无力感很真实</div></div></div>
+          <div class="emo-card r d3"><div class="emo-icon">😤</div><div><span class="emo-title">第一次看到满屏的报错信息</span><div class="emo-text">全是英文，红色的字，根本看不懂。后来学会了：直接把错误复制给AI，它会解释</div></div></div>
+          <div class="emo-card r d4"><div class="emo-icon">🌙</div><div><span class="emo-title">调了很久一个bug，发现是粗心打错字</span><div class="emo-text">一个变量名多了个空格，调试了一个多小时。这让我学会了：认真看每一个细节</div></div></div>
         </div>
       </div>
     </div>
   </div>
-  <div class="slide-num">09 / 12</div>
+  <div class="sn">09 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 10 — 学到了什么
-     =================================== -->
+<!-- ══════════ S10 · 数字成就 ══════════ -->
 <section class="slide" id="s10">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content" style="align-items:center">
-    <div class="s10-header">
-      <span class="tag tag-jade reveal">收获满满</span>
-      <h2 class="reveal reveal-delay-1">这次做游戏，我学到了什么？🎓</h2>
-    </div>
-    <div class="s10-lessons">
-      <div class="s10-lesson reveal reveal-delay-1">
-        <div class="s10-icon">🏗️</div>
-        <div class="s10-body">
-          <strong>软件架构是怎么形成的</strong>
-          <p>把大功能拆成小模块，每个文件只做一件事。这样改一个地方不会影响到其他地方</p>
-        </div>
-      </div>
-      <div class="s10-lesson reveal reveal-delay-2">
-        <div class="s10-icon">🤖</div>
-        <div class="s10-body">
-          <strong>怎么和AI有效沟通</strong>
-          <p>描述体验比描述代码更有效。说"我想要玩家感觉爽"比说"加个动画"更能得到好结果</p>
-        </div>
-      </div>
-      <div class="s10-lesson reveal reveal-delay-2">
-        <div class="s10-icon">🔍</div>
-        <div class="s10-body">
-          <strong>调试的思维方式</strong>
-          <p>报错不是终点，是线索。学会把错误信息分解，一步步排查，问题总能解决</p>
-        </div>
-      </div>
-      <div class="s10-lesson reveal reveal-delay-3">
-        <div class="s10-icon">☁️</div>
-        <div class="s10-body">
-          <strong>真实的云端部署</strong>
-          <p>Docker、Nginx、GitHub Webhook……这些词从陌生到"哦原来就是这个"，没想到12岁就用上了</p>
-        </div>
-      </div>
-      <div class="s10-lesson reveal reveal-delay-3">
-        <div class="s10-icon">💾</div>
-        <div class="s10-body">
-          <strong>数据同步不是小事</strong>
-          <p>本地存档 vs 云端存档，谁的数据更权威？时间戳、合并策略……原来游戏存档背后有这么多学问</p>
-        </div>
-      </div>
-      <div class="s10-lesson reveal reveal-delay-4">
-        <div class="s10-icon">🎯</div>
-        <div class="s10-body">
-          <strong>完成比完美更重要</strong>
-          <p>先做出来，再慢慢改好。第一版很丑没关系，它运行就是成功</p>
-        </div>
-      </div>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="r"><span class="tag tg">成果数字</span></div>
+    <h2 class="r d1">最终我做出了什么？📊</h2>
+    <div class="stats">
+      <div class="stat-card r d1" style="--sc:var(--gold2)"><div class="stat-emoji">🎮</div><div><span class="stat-num">12</span></div><div class="stat-label">个历史关卡<br>三种难度档次</div></div>
+      <div class="stat-card r d1" style="--sc:#ff9d90"><div class="stat-emoji">⚔️</div><div><span class="stat-num">36</span></div><div class="stat-label">位三国武将<br>各有专属属性数值</div></div>
+      <div class="stat-card r d2" style="--sc:var(--sky)"><div class="stat-emoji">📝</div><div><span class="stat-num">100<span class="stat-unit">+</span></span></div><div class="stat-label">道三国历史题目<br>边玩边学</div></div>
+      <div class="stat-card r d2" style="--sc:var(--jade)"><div class="stat-emoji">📁</div><div><span class="stat-num">25<span class="stat-unit">+</span></span></div><div class="stat-label">个 JS 模块<br>功能清晰分离</div></div>
+      <div class="stat-card r d3" style="--sc:#d89ef7"><div class="stat-emoji">🔧</div><div><span class="stat-num">39</span></div><div class="stat-label">次 git commit<br>记录每一步成长</div></div>
+      <div class="stat-card r d3" style="--sc:var(--gold2)"><div class="stat-emoji">🌐</div><div><span class="stat-num">1</span></div><div class="stat-label">个真正上线的游戏<br>全球可访问</div></div>
     </div>
   </div>
-  <div class="slide-num">10 / 12</div>
+  <div class="sn">10 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 11 — 感悟
-     =================================== -->
+<!-- ══════════ S11 · 学到了什么 ══════════ -->
 <section class="slide" id="s11">
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content">
-    <div style="text-align:center;margin-bottom:var(--content-gap)">
-      <span class="tag tag-gold reveal">我的感悟</span>
+  <div class="orn tl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="r"><span class="tag tj">收获满满</span></div>
+    <h2 class="r d1">这次做游戏，我学到了什么？🎓</h2>
+    <div class="lessons">
+      <div class="lesson r d1"><div class="li-icon">🏗️</div><div class="li-title">软件架构怎么形成的</div><div class="li-desc">大功能拆成小模块，每个文件只做一件事。state.js、battle.js、gacha.js……改一处不影响其他</div></div>
+      <div class="lesson r d2"><div class="li-icon">🤖</div><div class="li-title">如何和AI有效沟通</div><div class="li-desc">描述"我想要玩家感觉爽"比"加个动画"更有效。AI需要的是体验描述，不是技术指令</div></div>
+      <div class="lesson r d2"><div class="li-icon">🔍</div><div class="li-title">调试的思维方式</div><div class="li-desc">报错不是终点，是线索。把错误信息丢给AI，分析原因，一步步缩小范围，问题总能解决</div></div>
+      <div class="lesson r d3"><div class="li-icon">☁️</div><div class="li-title">真实的云端部署流程</div><div class="li-desc">Docker、Nginx、GitHub Webhook……这些词从完全陌生到"哦就是这样"，没想到12岁就用上了</div></div>
+      <div class="lesson r d4"><div class="li-icon">💾</div><div class="li-title">数据同步没那么简单</div><div class="li-desc">本地存档 vs 云端存档，谁权威？时间戳、合并策略、本地优先……游戏存档背后有很多学问</div></div>
+      <div class="lesson r d5"><div class="li-icon">🎯</div><div class="li-title">完成比完美更重要</div><div class="li-desc">先做出来，再慢慢改好。第一版很丑没关系——它能运行，就是成功。完美是完成的敌人</div></div>
     </div>
-    <p class="s11-big-quote reveal reveal-delay-1">
-      AI不是在帮我"作弊"，<br>
+  </div>
+  <div class="sn">11 / 13</div>
+</section>
+
+<!-- ══════════ S12 · 感悟 ══════════ -->
+<section class="slide" id="s12">
+  <div class="orn tl"></div><div class="orn tr"></div><div class="orn bl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="r"><span class="tag tg">我的感悟</span></div>
+    <p class="big-txt r d1">
+      AI不是在帮我<em>「作弊」</em>，<br>
       它是帮我把<em>想象力</em>变成<em>现实</em>的工具
     </p>
-    <div class="s11-divider reveal reveal-delay-2"></div>
-    <p class="s11-sub reveal reveal-delay-3">
-      以前我觉得编程是一件很遥远的事，是那些"天才"才能做的事。
-      但现在我知道，只要你有想法，有好奇心，知道自己想要什么——
-      借助AI，12岁也可以做出一个真正能玩的游戏。
+    <div class="divider r d2"></div>
+    <p class="sub r d3">
+      以前我觉得编程是"天才"才能做的事。
+      但现在我知道——只要你有想法，有好奇心，知道自己想要什么体验，
+      借助AI，<strong style="color:rgba(255,255,255,.8)">12岁也可以做出一个真正能玩的游戏</strong>。<br><br>
+      这不是终点。我已经想好了下一个版本要加什么 😏
     </p>
-    <div class="s11-tags reveal reveal-delay-4">
-      <span class="s11-tag">🎮 游戏开发</span>
-      <span class="s11-tag">🤖 AI协作</span>
-      <span class="s11-tag">☁️ 云端部署</span>
-      <span class="s11-tag">📚 历史学习</span>
-      <span class="s11-tag">💪 不放弃</span>
-      <span class="s11-tag">✨ 想象力</span>
+    <div class="tags-row r d4">
+      <span class="ftag">🎮 游戏开发</span>
+      <span class="ftag">🤖 AI协作</span>
+      <span class="ftag">☁️ 云端部署</span>
+      <span class="ftag">📚 历史学习</span>
+      <span class="ftag">🔧 软件架构</span>
+      <span class="ftag">💪 坚持不放弃</span>
+      <span class="ftag">✨ 想象力无边界</span>
     </div>
   </div>
-  <div class="slide-num">11 / 12</div>
+  <div class="sn">12 / 13</div>
 </section>
 
-<!-- ===================================
-     SLIDE 12 — 终章
-     =================================== -->
-<section class="slide" id="s12">
-  <div class="s12-bg"><div class="s12-c1"></div></div>
-  <div class="corner-decor tl"></div>
-  <div class="corner-decor tr"></div>
-  <div class="corner-decor bl"></div>
-  <div class="corner-decor br"></div>
-  <div class="slide-content">
-    <div class="s12-seal reveal">⚔️</div>
-    <h2 class="s12-title reveal reveal-delay-1">
-      三国志探险<br><span>正式上线</span>
-    </h2>
-    <p class="s12-sub reveal reveal-delay-2">
-      从一个疯狂的想法，到 50+ 次提交，到真正上线的游戏。<br>
-      这只是开始。下一个版本，我已经想好了 😏
-    </p>
-    <a class="s12-cta reveal reveal-delay-3" href="#">🎮 立即体验游戏</a>
-    <p style="font-size:var(--small-size);color:rgba(255,255,255,0.25);margin-top:clamp(8px,2vh,16px)" class="reveal reveal-delay-4">
-      一个12岁的开发者 · 用AI · 独立完成
-    </p>
+<!-- ══════════ S13 · ENDING ══════════ -->
+<section class="slide" id="s13">
+  <div class="bg">
+    <div class="grid-bg"></div>
+    <img class="hero" src="images/characters/zhugeliang.webp" alt="">
+    <div class="glow"></div>
   </div>
-  <div class="slide-num">12 / 12</div>
+  <div class="orn tl"></div><div class="orn tr"></div><div class="orn bl"></div><div class="orn br"></div>
+  <div class="content">
+    <div class="seal r">⚔️</div>
+    <h2 class="serif r d1">三国志探险<br><em>正式上线</em></h2>
+    <p class="end-sub r d2">
+      从一个疯狂的想法，到 39 次 commit，到真正上线的游戏。<br>
+      一个12岁的孩子，用AI工具，独立完成。
+    </p>
+    <div class="cta-row r d3">
+      <a class="cta-btn cta-primary" href="#">🎮 立即体验游戏</a>
+      <a class="cta-btn cta-secondary" href="https://github.com/Harrisonford-ss/sanguo-game" target="_blank">📦 查看源代码</a>
+    </div>
+  </div>
+  <div class="sn">13 / 13</div>
 </section>
-
 
 <script>
-/* ============================================
-   PRESENTATION CONTROLLER
-   ============================================ */
-const slides = document.querySelectorAll('.slide');
-const totalSlides = slides.length;
-let currentSlide = 0;
-let isScrolling = false;
+const slides = Array.from(document.querySelectorAll('.slide'));
+const n = slides.length;
+let cur = 0, locked = false;
 
 // 生成导航点
-const navDots = document.getElementById('navDots');
-slides.forEach((_, i) => {
-  const btn = document.createElement('button');
-  btn.className = 'nav-dot' + (i === 0 ? ' active' : '');
-  btn.setAttribute('aria-label', `跳到第 ${i+1} 张幻灯片`);
-  btn.addEventListener('click', () => goTo(i));
-  navDots.appendChild(btn);
+const dotsEl = document.getElementById('dots');
+slides.forEach((_,i)=>{
+  const b = document.createElement('button');
+  b.className='dot'+(i===0?' on':'');
+  b.setAttribute('aria-label',`第${i+1}页`);
+  b.onclick=()=>goTo(i);
+  dotsEl.appendChild(b);
 });
 
-function goTo(index) {
-  currentSlide = Math.max(0, Math.min(totalSlides - 1, index));
-  slides[currentSlide].scrollIntoView({ behavior: 'smooth' });
-  updateUI();
+function goTo(i){
+  cur = Math.max(0,Math.min(n-1,i));
+  slides[cur].scrollIntoView({behavior:'smooth'});
+  update();
 }
 
-function updateUI() {
-  document.querySelectorAll('.nav-dot').forEach((d, i) => {
-    d.classList.toggle('active', i === currentSlide);
-  });
-  const progress = ((currentSlide + 1) / totalSlides) * 100;
-  document.getElementById('progressBar').style.width = progress + '%';
+function update(){
+  document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('on',i===cur));
+  document.getElementById('prog').style.width=((cur+1)/n*100)+'%';
 }
 
-// 键盘导航
-document.addEventListener('keydown', e => {
-  if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
-    e.preventDefault();
-    goTo(currentSlide + 1);
-  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp') {
-    e.preventDefault();
-    goTo(currentSlide - 1);
-  } else if (e.key === 'Home') {
-    e.preventDefault();
-    goTo(0);
-  } else if (e.key === 'End') {
-    e.preventDefault();
-    goTo(totalSlides - 1);
-  }
+// 键盘
+document.addEventListener('keydown',e=>{
+  if(['ArrowDown','ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();goTo(cur+1)}
+  else if(['ArrowUp','ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();goTo(cur-1)}
+  else if(e.key==='Home'){e.preventDefault();goTo(0)}
+  else if(e.key==='End'){e.preventDefault();goTo(n-1)}
 });
 
-// 触摸滑动
-let touchStartY = 0;
-document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
-document.addEventListener('touchend', e => {
-  const delta = touchStartY - e.changedTouches[0].clientY;
-  if (Math.abs(delta) > 50) goTo(currentSlide + (delta > 0 ? 1 : -1));
-}, { passive: true });
+// 触摸
+let ty=0;
+document.addEventListener('touchstart',e=>{ty=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',e=>{
+  const d=ty-e.changedTouches[0].clientY;
+  if(Math.abs(d)>50)goTo(cur+(d>0?1:-1));
+},{passive:true});
 
-// 滚轮导航
-document.addEventListener('wheel', e => {
-  if (isScrolling) return;
-  isScrolling = true;
-  goTo(currentSlide + (e.deltaY > 0 ? 1 : -1));
-  setTimeout(() => { isScrolling = false; }, 800);
-}, { passive: true });
+// 滚轮
+document.addEventListener('wheel',e=>{
+  if(locked)return;
+  locked=true;
+  goTo(cur+(e.deltaY>0?1:-1));
+  setTimeout(()=>locked=false,750);
+},{passive:true});
 
-// Intersection Observer 追踪当前页 + 触发动画
-const revealObserver = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      // 当前幻灯片
-      const idx = Array.from(slides).indexOf(entry.target);
-      if (idx !== -1) {
-        currentSlide = idx;
-        updateUI();
-      }
-      // 触发动画
-      entry.target.querySelectorAll('.reveal').forEach(el => {
-        el.classList.add('visible');
-      });
+// IntersectionObserver: 追踪当前页 + 触发reveal动画
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const i=slides.indexOf(e.target);
+      if(i!==-1){cur=i;update();}
+      e.target.querySelectorAll('.r').forEach(el=>el.classList.add('on'));
     }
   });
-}, { threshold: 0.5 });
+},{threshold:0.5});
 
-slides.forEach(s => revealObserver.observe(s));
-
-// 初始化第一张
-slides[0].querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+slides.forEach(s=>io.observe(s));
+// 首页立即触发
+slides[0].querySelectorAll('.r').forEach(el=>el.classList.add('on'));
 </script>
 </body>
 </html>
