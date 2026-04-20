@@ -56,10 +56,9 @@ export function showDetail() {
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:600;display:flex;align-items:flex-end;justify-content:center;padding:20px';
   ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
   ov.innerHTML = `
-    <div style="background:white;border-radius:20px 20px 16px 16px;padding:20px;width:100%;max-width:400px;box-shadow:0 -4px 30px rgba(0,0,0,0.15)">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="background:white;border-radius:20px 20px 16px 16px;padding:20px;width:100%;max-width:400px;box-shadow:0 -4px 30px rgba(0,0,0,0.15)" onclick="event.stopPropagation()">
+      <div style="margin-bottom:16px">
         <h4 style="margin:0;font-size:16px">❤️ 体力</h4>
-        <button onclick="this.closest('div[style]').remove()" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer">✕</button>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
         <span style="font-size:36px;font-weight:900;color:${color}">${sp}</span>
