@@ -8,8 +8,11 @@ import { avatarHTML } from './avatars.js';
 
 export function initMap() {
   window.mapModule = { refresh, closePanel };
-  // 直接把进入关卡的函数挂到 window 上，避免依赖 battleModule 初始化顺序
   window._goStage = (id) => {
+    if (gameState.stamina <= 0) {
+      window.staminaModule?.showDetail();
+      return;
+    }
     if (window.battleModule?.startStageBattle) {
       window.battleModule.startStageBattle(id);
     } else {
@@ -85,6 +88,7 @@ function renderStageCard(stage, currentStage, totalStars) {
           ${'🔥'.repeat(stage.difficulty)}${'<span style="opacity:0.2">🔥</span>'.repeat(5 - stage.difficulty)}
         </div>
         ${!locked && !completed ? `<div class="stage-reward">奖励: +${stage.reward.quizCoins} 答题积分</div>` : ''}
+        ${!locked && gameState.stamina <= 0 ? `<div style="font-size:11px;color:#ef5350;margin-top:4px;font-weight:600">❤️ 体力不足，点击查看</div>` : ''}
       </div>
     </div>
   `;

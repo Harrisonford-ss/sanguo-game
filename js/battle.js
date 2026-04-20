@@ -202,6 +202,13 @@ async function startFight() {
   const stage = getStage(currentStageId);
   if (!stage) return;
 
+  // 扣除体力
+  if (!gameState.spendStamina()) {
+    window.staminaModule?.showDetail();
+    return;
+  }
+  window.staminaModule?.refresh();
+
   const myTeam = selectedTeam.map(id => ({ ...calcStats(id), hp: 0 }));
   myTeam.forEach(u => u.hp = u.maxHp);
 

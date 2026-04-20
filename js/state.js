@@ -11,6 +11,8 @@ const defaultState = {
   gachaCoins: 30,     // 抽卡积分（答题获得，用于抽卡）
   gold: 0,            // 金币（大富翁获得，用于升级武将）
   profileAvatar: 'liubei', // 玩家选择的头像武将ID
+  stamina: 10,             // 当前体力
+  staminaLastRegen: 0,     // 上次恢复时间戳(ms)
 
   // 卡牌（初始赠送3张：刘备、关羽、张飞——桃园三结义）
   ownedCards: {
@@ -103,6 +105,52 @@ class GameState {
   }
 
   get profileAvatar() { return this.data.profileAvatar || 'liubei'; }
+
+  // ===== 体力系统 =====
+  static STAMINA_MAX = 10;
+  static STAMINA_REGEN_MS = 10 * 60 * 1000; // 10分钟
+
+  get stamina() {
+    this._regenStamina();
+    return this.data.stamina ?? GameState.STAMINA_MAX;
+  }
+
+  get staminaMax() { return GameState.STAMINA_MAX; }
+
+  // 计算并补回离线期间恢复的体力
+  _regenStamina() {
+    const cur = this.data.stamina ?? GameState.STAMINA_MAX;
+    if (cur >= GameState.STAMINA_MAX) {
+      this.data.staminaLastRegen = Date.now();
+      return;
+    }
+    const last = this.data.staminaLastRegen || Date.now();
+    const elapsed = Date.now() - last;
+    const gained = Math.floor(elapsed / GameState.STAMINA_REGEN_MS);
+    if (gained > 0) {
+      this.data.stamina = Math.min(GameState.STAMINA_MAX, cur + gained);
+      this.data.staminaLastRegen = last + gained * GameState.STAMINA_REGEN_MS;
+      this.save();
+    }
+  }
+
+  // 下次恢复还需多少毫秒
+  staminaRegenMs() {
+    if (this.stamina >= GameState.STAMINA_MAX) return 0;
+    const last = this.data.staminaLastRegen || Date.now();
+    const elapsed = Date.now() - last;
+    return GameState.STAMINA_REGEN_MS - (elapsed % GameState.STAMINA_REGEN_MS);
+  }
+
+  spendStamina() {
+    this._regenStamina();
+    if ((this.data.stamina ?? GameState.STAMINA_MAX) <= 0) return false;
+    this.data.stamina = (this.data.stamina ?? GameState.STAMINA_MAX) - 1;
+    if (!this.data.staminaLastRegen) this.data.staminaLastRegen = Date.now();
+    this.save();
+    this.emit('stamina-changed');
+    return true;
+  }
 
   // ===== 抽卡积分（答题获得，用于抽卡） =====
   get gachaCoins() { return this.data.gachaCoins; }

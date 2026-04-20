@@ -12,6 +12,7 @@ import { initAuth } from './auth.js';
 import { initLeaderboard } from './leaderboard.js';
 import { initDungeon } from './dungeon.js';
 import { initAchievements, checkAchievements, renderAchievements } from './achievements.js';
+import { initStamina } from './stamina.js';
 
 // 检测微信浏览器，添加 class 供 CSS 处理底部安全区
 if (/MicroMessenger/i.test(navigator.userAgent)) {
@@ -42,6 +43,7 @@ class App {
     safeInit('leaderboard', initLeaderboard);
     safeInit('dungeon', initDungeon);
     safeInit('achievements', initAchievements);
+    safeInit('stamina', initStamina);
 
     // 首页英雄轮播
     this.startHeroSlideshow();
@@ -115,7 +117,7 @@ class App {
     if (screen === 'gacha') window.gachaModule?.refresh();
     if (screen === 'cards') window.cardsModule?.refresh();
     if (screen === 'battle') window.battleModule?.refresh();
-    if (screen === 'map') window.mapModule?.refresh();
+    if (screen === 'map') { window.mapModule?.refresh(); window.staminaModule?.refresh(); }
     if (screen === 'monopoly') window.monopolyModule?.refresh();
     if (screen === 'quiz') window.quizModule?.refresh();
     if (screen === 'rank') window.lbModule?.refresh();
