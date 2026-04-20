@@ -203,10 +203,7 @@ async function startFight() {
   if (!stage) return;
 
   // 扣除体力
-  if (!gameState.spendStamina()) {
-    window.staminaModule?.showDetail();
-    return;
-  }
+  if (!gameState.spendStamina()) return;
   window.staminaModule?.refresh();
 
   const myTeam = selectedTeam.map(id => ({ ...calcStats(id), hp: 0 }));

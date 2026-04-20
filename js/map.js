@@ -9,10 +9,7 @@ import { avatarHTML } from './avatars.js';
 export function initMap() {
   window.mapModule = { refresh, closePanel };
   window._goStage = (id) => {
-    if (gameState.stamina <= 0) {
-      window.staminaModule?.showDetail();
-      return;
-    }
+    if (gameState.stamina <= 0) return;
     if (window.battleModule?.startStageBattle) {
       window.battleModule.startStageBattle(id);
     } else {
