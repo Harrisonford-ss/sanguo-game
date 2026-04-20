@@ -31,8 +31,10 @@ export function initMap() {
 
   window._sweepStage = (id, difficulty = 'normal', times = 1) => {
     const stamina = gameState.stamina;
-    if (stamina <= 0) { showToast('❤️ 体力不足'); return; }
-    const actualTimes = Math.min(times, stamina);
+    if (stamina <= 0) { showToast('❤️ 体力不足，无法扫荡'); return; }
+    const remaining = gameState.remainingSweeps(id, difficulty);
+    if (remaining <= 0) { showToast('今日扫荡次数已用完'); return; }
+    const actualTimes = Math.min(times, stamina, remaining);
     const base = difficulty === 'legend' ? 3 : difficulty === 'elite' ? 2 : 1;
     let totalReward = 0;
     for (let i = 0; i < actualTimes; i++) {
@@ -42,6 +44,7 @@ export function initMap() {
       gameState._recordDailyClear(id, difficulty);
       if (reward > 0) { gameState.data.quizCoins += reward; totalReward += reward; }
     }
+    gameState.recordDailySweep(id, difficulty, actualTimes);
     gameState.save();
     gameState.emit('coins-changed');
     closeStagePopup();
@@ -52,7 +55,7 @@ export function initMap() {
   window._sweepAdjust = (delta) => {
     const el = document.getElementById('sweep-count-input');
     if (!el) return;
-    el.value = Math.max(1, Math.min(10, Number(el.value) + delta));
+    el.value = Math.max(1, Math.min(Number(el.max) || 10, Number(el.value) + delta));
     window._sweepInputChanged();
   };
 
@@ -61,20 +64,21 @@ export function initMap() {
     const hint = document.getElementById('sweep-stamina-hint');
     const btn = document.getElementById('sweep-confirm-btn');
     if (!el || !hint || !btn) return;
-    const n = Math.max(1, Math.min(10, Number(el.value) || 1));
+    const max = Number(el.max) || 10;
+    const n = Math.max(1, Math.min(max, Number(el.value) || 1));
     el.value = n;
     const stamina = gameState.stamina;
     const over = n > stamina;
     hint.textContent = over ? `❤️ 体力不足（当前${stamina}）` : `消耗 ${n} ❤️`;
-    hint.style.color = over ? '#ef5350' : '#aaa';
+    hint.style.color = over ? '#ef5350' : '#ab47bc';
     btn.disabled = over;
-    btn.style.background = over ? '#e0e0e0' : '#9c27b0';
+    btn.style.background = over ? '#e0e0e0' : 'linear-gradient(135deg,#9c27b0,#6a1b9a)';
     btn.style.cursor = over ? 'not-allowed' : 'pointer';
   };
 
   window._confirmSweep = (id, difficulty) => {
     const el = document.getElementById('sweep-count-input');
-    const n = Math.max(1, Math.min(10, Number(el?.value) || 1));
+    const n = Math.max(1, Number(el?.value) || 1);
     if (n > gameState.stamina) { showToast('❤️ 体力不足，无法扫荡'); return; }
     window._sweepStage(id, difficulty, n);
   };
@@ -88,8 +92,9 @@ function showStagePopup(stage, difficulty) {
   const dailyClears = gameState.getDailyClears(stage.id, difficulty);
   const stamina = gameState.stamina;
   const noStamina = stamina <= 0;
-  const swept = dailyClears >= 2;
-  const sweepNote = dailyClears === 0 ? '首次全额' : dailyClears === 1 ? '再次减半' : '今日已结束';
+  const remainingSweeps = gameState.remainingSweeps(stage.id, difficulty);
+  const swept = remainingSweeps <= 0;
+  const sweepNote = dailyClears === 0 ? '首次全额' : dailyClears === 1 ? '再次减半' : '后续无奖励';
 
   const overlay = document.createElement('div');
   overlay.id = 'stage-popup-overlay';
@@ -141,12 +146,12 @@ function showStagePopup(stage, difficulty) {
           ${swept?'opacity:0.6':''}">
           <div style="font-size:28px;margin-bottom:5px">⚡</div>
           <div style="font-size:13px;font-weight:900;color:${swept?'#bbb':'#7b1fa2'}">快速扫荡</div>
-          <div style="font-size:10px;color:${swept?'#ccc':'#ab47bc'};margin-top:2px">${sweepNote}</div>
+          <div style="font-size:10px;color:${swept?'#ccc':'#ab47bc'};margin-top:2px">${sweepNote} · 今日剩余 <b>${remainingSweeps}</b> 次</div>
           <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-top:9px">
             <button onclick="window._sweepAdjust(-1)" ${swept?'disabled':''}
               style="width:24px;height:24px;border-radius:7px;border:1.5px solid #ce93d8;background:#fff;
               color:#9c27b0;font-size:15px;cursor:pointer;padding:0;font-weight:800;line-height:1">−</button>
-            <input id="sweep-count-input" type="number" value="1" min="1" max="10"
+            <input id="sweep-count-input" type="number" value="1" min="1" max="${remainingSweeps}"
               oninput="window._sweepInputChanged()"
               style="width:34px;text-align:center;border:1.5px solid #ce93d8;border-radius:8px;
               font-size:14px;font-weight:800;color:#7b1fa2;padding:3px 0;background:#fff" ${swept?'disabled':''}>

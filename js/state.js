@@ -297,6 +297,25 @@ class GameState {
     this.data.dailyClears[k] = (this.data.dailyClears[k] || 0) + 1;
   }
 
+  static DAILY_SWEEP_MAX = 10;
+
+  getDailySweeps(stageId, difficulty = 'normal') {
+    if (!this.data.dailySweeps) this.data.dailySweeps = {};
+    const today = new Date().toISOString().slice(0, 10);
+    return this.data.dailySweeps[`${today}_${stageId}_${difficulty}`] || 0;
+  }
+
+  recordDailySweep(stageId, difficulty = 'normal', times = 1) {
+    if (!this.data.dailySweeps) this.data.dailySweeps = {};
+    const today = new Date().toISOString().slice(0, 10);
+    const k = `${today}_${stageId}_${difficulty}`;
+    this.data.dailySweeps[k] = (this.data.dailySweeps[k] || 0) + times;
+  }
+
+  remainingSweeps(stageId, difficulty = 'normal') {
+    return Math.max(0, GameState.DAILY_SWEEP_MAX - this.getDailySweeps(stageId, difficulty));
+  }
+
   // 完成关卡，返回本次获得的星和答题积分
   completeStage(stageId, stars, difficulty = 'normal') {
     const key = this._stageKey(stageId, difficulty);
