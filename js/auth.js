@@ -142,8 +142,8 @@ function showUserMenu() {
 
   showPopup(`
     <div style="text-align:center;margin-bottom:16px">
-      <div style="display:inline-block;padding:3px;border-radius:50%;background:${ringClass==='legend'?'linear-gradient(135deg,#ffd700,#ff9800)':ringClass==='rare'?'linear-gradient(135deg,#7c4dff,#448aff)':'linear-gradient(135deg,#66bb6a,#43a047)'};margin-bottom:8px">
-        <img src="images/characters/${avatarId}.webp" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block;background:rgba(0,0,0,0.1)"
+      <div id="profile-avatar-ring" style="display:inline-block;padding:3px;border-radius:50%;background:${ringClass==='legend'?'linear-gradient(135deg,#ffd700,#ff9800)':ringClass==='rare'?'linear-gradient(135deg,#7c4dff,#448aff)':'linear-gradient(135deg,#66bb6a,#43a047)'};margin-bottom:8px">
+        <img id="profile-avatar-img" src="images/characters/${avatarId}.webp" style="width:72px;height:72px;border-radius:50%;object-fit:cover;display:block;background:rgba(0,0,0,0.1)"
           onerror="this.style.display='none'">
       </div>
       <h3 style="margin:0 0 2px">${u.nickname}</h3>
@@ -216,9 +216,19 @@ function renderAvatarPicker() {
   window._pickAvatar = (id) => {
     gameState.data.profileAvatar = id;
     gameState.save();
+    // 同步更新弹窗内大头像
+    const ringEl = document.getElementById('profile-avatar-ring');
+    const imgEl  = document.getElementById('profile-avatar-img');
+    const c = getCharacter(id);
+    if (ringEl && c) {
+      const grad = c.rarity === 'legend' ? 'linear-gradient(135deg,#ffd700,#ff9800)'
+                 : c.rarity === 'rare'   ? 'linear-gradient(135deg,#7c4dff,#448aff)'
+                 :                         'linear-gradient(135deg,#66bb6a,#43a047)';
+      ringEl.style.background = grad;
+    }
+    if (imgEl) { imgEl.style.display = 'block'; imgEl.src = `images/characters/${id}.webp`; }
     updateAuthDisplay();
-    renderAvatarPicker(); // 刷新选中态
-    // 同步到云端
+    renderAvatarPicker();
     if (isLoggedIn()) window.authModule.syncToCloud().catch(() => {});
   };
 }
