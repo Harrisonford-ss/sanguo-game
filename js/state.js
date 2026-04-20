@@ -10,6 +10,7 @@ const defaultState = {
   quizCoins: 3,       // 答题积分（对战获得，用于答题）
   gachaCoins: 30,     // 抽卡积分（答题获得，用于抽卡）
   gold: 0,            // 金币（大富翁获得，用于升级武将）
+  profileAvatar: 'liubei', // 玩家选择的头像武将ID
 
   // 卡牌（初始赠送3张：刘备、关羽、张飞——桃园三结义）
   ownedCards: {
@@ -100,6 +101,8 @@ class GameState {
     this.emit('coins-changed');
     return true;
   }
+
+  get profileAvatar() { return this.data.profileAvatar || 'liubei'; }
 
   // ===== 抽卡积分（答题获得，用于抽卡） =====
   get gachaCoins() { return this.data.gachaCoins; }
