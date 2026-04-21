@@ -392,9 +392,34 @@ export function checkAchievements(extra = {}) {
   return anyNew;
 }
 
+// ===== 迁移：旧版已解锁成就静默标记为已领取（避免重复发奖）=====
+function migrateOldUnlocked() {
+  let migrated = false;
+  for (const a of SINGLE) {
+    if (isSingleUnlocked(a.id) && !isSingleClaimed(a.id)) {
+      gameState.claimAchievement(a.id);
+      migrated = true;
+    }
+  }
+  for (const a of STAGED) {
+    const cur = currentStageIndex(a.id);
+    for (let i = 0; i <= cur; i++) {
+      if (!isStageClaimed(a.id, i)) {
+        gameState.claimAchievement(stageKey(a.id, i));
+        migrated = true;
+      }
+    }
+  }
+  return migrated;
+}
+
 // ===== 初始化 =====
 export function initAchievements() {
   window.achievementsModule = { refresh: renderAchievements, check: checkAchievements };
+
+  // 将本次更新前已解锁的成就全部静默标记为已领取
+  migrateOldUnlocked();
+
   gameState.on('achievement-unlocked', () => {
     updateHomeBadge();
     if (window.app?.currentScreen === 'achievements') renderAchievements();
