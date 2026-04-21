@@ -536,6 +536,8 @@ async function executeAttack(atk, def, useInt, allUnits) {
 function showResult(won, surviving, stage, difficulty = 'normal') {
   const dc = DIFF_CONFIG[difficulty];
   let reward = '';
+  const nextStage = stages.find(s => s.id === stage.id + 1);
+
   if (won) {
     const stars = surviving;
     const { starsGained, quizReward, clearCount } = gameState.completeStage(stage.id, stars, difficulty);
@@ -549,38 +551,62 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
       <div style="display:inline-block;background:${dc.color};color:white;font-size:11px;font-weight:800;padding:2px 10px;border-radius:10px;margin-bottom:6px">${dc.icon} ${dc.label}</div>
       ${rewardLine}`;
     if (window.effects) window.effects.flashPulse('rgba(245,166,35,0.4)');
-    // 关卡通关后同步到云端
-    if (window.authModule?.syncToCloud) {
-      window.authModule.syncToCloud().catch(() => {});
-    }
-    // 撒花
+    if (window.authModule?.syncToCloud) window.authModule.syncToCloud().catch(() => {});
     for(let i=0;i<25;i++){const e=document.createElement('div');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=['#ef5350','#4caf50','#4a90d9','#f5a623'][i%4];e.style.animationDelay=Math.random()*0.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2000);}
-    // 3秒后自动进入下一关（若存在）
-    const nextStage = stages.find(s => s.id === stage.id + 1);
-    if (nextStage) {
-      setTimeout(() => window.battleModule.startStageBattle(nextStage.id, difficulty), 3000);
-    }
   }
 
   const logEl = document.getElementById('b-log');
   if (logEl) {
-    const nextStageForBtn = stages.find(s => s.id === stage.id + 1);
-    const hasNext = won && !!nextStageForBtn;
+    const hasNext = won && !!nextStage;
     logEl.innerHTML += `
       <div style="text-align:center;padding:16px 0">
         <div style="font-size:32px;margin-bottom:4px">${won ? '🎉' : '😤'}</div>
         <h3 style="color:white;font-size:20px;margin-bottom:8px">${won ? '胜利！' : '战败…'}</h3>
         ${reward}
-        ${hasNext ? `<p style="color:#aaa;font-size:12px;margin:4px 0">3秒后自动进入下一关…</p>` : ''}
+        ${hasNext ? `<p id="next-stage-hint" style="color:#aaa;font-size:12px;margin:4px 0">3秒后自动进入下一关…</p>` : ''}
         ${!won ? '<p style="color:#ccc;font-size:13px">升级武将再来挑战！</p>' : ''}
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
           ${won ? '<button class="btn btn-primary" onclick="window.app.navigate(\'quiz\')">去答题</button>' : ''}
-          ${hasNext ? `<button class="btn" style="background:linear-gradient(135deg,#4caf50,#388e3c);color:white;font-weight:700;border:none" onclick="window.battleModule.startStageBattle(${nextStageForBtn.id},'${difficulty}')">⚔️ 立即下一关</button>` : ''}
-          <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.battleModule.startStageBattle(${stage.id},'${difficulty}')">🔄 再来</button>
-          <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.app.navigate('map')">🏠 返回</button>
+          ${hasNext ? `<button class="btn" style="background:linear-gradient(135deg,#4caf50,#388e3c);color:white;font-weight:700;border:none" onclick="window._goNextNow()">⚔️ 立即下一关</button>` : ''}
+          <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window._cancelNext();window.battleModule.startStageBattle(${stage.id},'${difficulty}')">🔄 再来</button>
+          <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window._cancelNext();window.app.navigate('map')">🏠 返回</button>
         </div>
       </div>`;
     logEl.scrollTop = logEl.scrollHeight;
+
+    if (won && nextStage) {
+      const nextId = nextStage.id;
+      let countdown = 3;
+      window._nextStageTimer = setInterval(() => {
+        countdown--;
+        const hint = document.getElementById('next-stage-hint');
+        if (hint) hint.textContent = countdown > 0 ? `${countdown}秒后自动进入下一关…` : '正在进入…';
+        if (countdown <= 0) {
+          clearInterval(window._nextStageTimer);
+          window._nextStageTimer = null;
+          currentStageId = nextId;
+          currentDifficulty = difficulty;
+          selectedTeam = [null, null, null];
+          if (window.app?.navigate) window.app.navigate('battle');
+        }
+      }, 1000);
+
+      window._goNextNow = () => {
+        clearInterval(window._nextStageTimer);
+        window._nextStageTimer = null;
+        currentStageId = nextId;
+        currentDifficulty = difficulty;
+        selectedTeam = [null, null, null];
+        if (window.app?.navigate) window.app.navigate('battle');
+      };
+    }
+
+    window._cancelNext = () => {
+      if (window._nextStageTimer) {
+        clearInterval(window._nextStageTimer);
+        window._nextStageTimer = null;
+      }
+    };
   }
 }
 

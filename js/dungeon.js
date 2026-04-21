@@ -630,8 +630,10 @@ async function moveTo(x,y) {
   if (map[y][x]==='wall') return; // 石墙不可进入
   playerPos={x,y};
   revealAround(x,y);
-  render();
   const tile=map[y][x];
+  // boss/start 格子保留图标；其他踩到立刻清空
+  if (tile!=='empty'&&tile!=='start'&&tile!=='boss') map[y][x]='empty';
+  render();
   if (tile!=='empty'&&tile!=='start') await handleTile(tile,x,y);
   if (hp<=0) { endDungeon(); return; }
   render();
@@ -649,7 +651,7 @@ async function handleTile(tile,x,y) {
     case 'boss': await doBoss(); break;
     // exit不再出现在地图上，只能通过击败BOSS进入下一层
   }
-  if (tile!=='exit'&&tile!=='boss') map[y][x]='empty';
+  // boss 击败后地图重新生成（genMap）；其他格子已在 moveTo 中提前清空
 }
 
 // 战斗（给经验）
