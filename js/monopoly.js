@@ -980,9 +980,6 @@ async function land(who) {
       const gained = p.troops - before;
       if (gained > 0) log(`💂 ${label}补充兵力+${gained}（共${p.troops}）`);
     }
-    // AI 自动驻兵：优先向重要城池和兵力薄弱城池分配
-    _aiAutoGarrison('ai');
-    _aiAutoGarrison('ai2');
     for (const [cityId, info] of Object.entries(disasterCities)) {
       info.rounds--;
       if (info.rounds <= 0) {
@@ -1162,6 +1159,21 @@ async function doTax(who, tile) {
   const ev = cityEvents[tile.id];
   const evStr = ev ? (ev.type==='locust'?'🦗蝗灾！':ev.type==='harvest'?'🌾丰收！':'') : '';
   log(`${whoLabel} ${tile.name}${lvStr}${evStr}收税+${tax}💰`);
+  if (who !== 'player') {
+    // AI驻兵：停留在己城时，将部分兵力驻入该城
+    if (p.troops > 0) {
+      const space = MAX_GARRISON - getGarrison(tile.id);
+      if (space > 0) {
+        const ratio = 0.3 + Math.random() * 0.4; // 30%~70%
+        const send = Math.min(space, Math.ceil(p.troops * ratio), p.troops);
+        garrison[tile.id] = (garrison[tile.id] || 0) + send;
+        p.troops -= send;
+        const whoLabel = who==='ai'?'曹操':'孙权';
+        log(`⚔️ ${whoLabel}向${tile.name}驻兵+${send}`);
+      }
+    }
+    return;
+  }
   if (who === 'player') {
     const canUpgrade = lv < 3;
     const upgCost = canUpgrade ? (tile.major ? UPGRADE_COST_MAJOR : UPGRADE_COST_MINOR)[lv] : 0;
@@ -1699,30 +1711,6 @@ async function doEvent(who) {
 // ===== 驻兵辅助 =====
 function getGarrison(cityId) { return garrison[cityId] || 0; }
 
-function _aiAutoGarrison(who) {
-  const p = getPlayer(who);
-  if (p.troops <= 0) return;
-  // 按优先级排序：major城 > 驻兵少的城
-  const cities = p.cities
-    .filter(id => ownership[id] === who)
-    .map(id => ({ id, tile: BOARD.find(t=>t.id===id), g: getGarrison(id) }))
-    .sort((a,b) => {
-      if (a.tile?.major !== b.tile?.major) return a.tile?.major ? -1 : 1;
-      return a.g - b.g;
-    });
-  const RESERVE = 2; // keep at least 2 troops visible in status bar
-  for (const c of cities) {
-    if (p.troops <= RESERVE) break;
-    const space = MAX_GARRISON - c.g;
-    if (space <= 0) continue;
-    const ratio = 0.15 + Math.random() * 0.45; // 15%~60% 随机
-    const available = p.troops - RESERVE;
-    const send = Math.min(space, Math.ceil(available * ratio), available);
-    if (send <= 0) continue;
-    garrison[c.id] = (garrison[c.id] || 0) + send;
-    p.troops -= send;
-  }
-}
 
 // 玩家调兵弹窗：落在己城时触发
 function showGarrisonPopup(tile) {
@@ -1781,8 +1769,6 @@ async function aiTurn(who) {
         const gained = p.troops - before;
         if (gained > 0) log(`💂 ${label}补充兵力+${gained}（共${p.troops}）`);
       }
-      _aiAutoGarrison('ai');
-      _aiAutoGarrison('ai2');
       for (const [cityId, info] of Object.entries(disasterCities)) {
         info.rounds--;
         if (info.rounds <= 0) {
