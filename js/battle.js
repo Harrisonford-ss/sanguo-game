@@ -555,19 +555,27 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
     }
     // 撒花
     for(let i=0;i<25;i++){const e=document.createElement('div');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=['#ef5350','#4caf50','#4a90d9','#f5a623'][i%4];e.style.animationDelay=Math.random()*0.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2000);}
+    // 3秒后自动进入下一关（若存在且已解锁）
+    const nextStage = stages.find(s => s.id === stage.id + 1);
+    if (nextStage && gameState.totalStars >= nextStage.unlockStars) {
+      setTimeout(() => window.battleModule.startStageBattle(nextStage.id, difficulty), 3000);
+    }
   }
 
   const logEl = document.getElementById('b-log');
   if (logEl) {
+    const nextStageForBtn = stages.find(s => s.id === stage.id + 1);
+    const hasNext = won && nextStageForBtn && gameState.totalStars >= nextStageForBtn.unlockStars;
     logEl.innerHTML += `
       <div style="text-align:center;padding:16px 0">
         <div style="font-size:32px;margin-bottom:4px">${won ? '🎉' : '😤'}</div>
         <h3 style="color:white;font-size:20px;margin-bottom:8px">${won ? '胜利！' : '战败…'}</h3>
         ${reward}
+        ${hasNext ? `<p style="color:#aaa;font-size:12px;margin:4px 0">3秒后自动进入下一关…</p>` : ''}
         ${!won ? '<p style="color:#ccc;font-size:13px">升级武将再来挑战！</p>' : ''}
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
           ${won ? '<button class="btn btn-primary" onclick="window.app.navigate(\'quiz\')">去答题</button>' : ''}
-          ${won && stages.find(s => s.id === stage.id + 1) ? `<button class="btn" style="background:linear-gradient(135deg,#4caf50,#388e3c);color:white;font-weight:700;border:none" onclick="window._goNextStage(${stage.id},'${difficulty}')">⚔️ 下一关</button>` : ''}
+          ${hasNext ? `<button class="btn" style="background:linear-gradient(135deg,#4caf50,#388e3c);color:white;font-weight:700;border:none" onclick="window.battleModule.startStageBattle(${nextStageForBtn.id},'${difficulty}')">⚔️ 立即下一关</button>` : ''}
           <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.battleModule.startStageBattle(${stage.id},'${difficulty}')">🔄 再来</button>
           <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.app.navigate('map')">🏠 返回</button>
         </div>
@@ -575,18 +583,6 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
     logEl.scrollTop = logEl.scrollHeight;
   }
 }
-
-window._goNextStage = function(currentId, difficulty) {
-  const next = stages.find(s => s.id === currentId + 1);
-  if (!next) { window.app.navigate('map'); return; }
-  // 检查下一关是否已解锁
-  const totalStars = gameState.totalStars;
-  if (totalStars >= next.unlockStars) {
-    window.battleModule.startStageBattle(next.id, difficulty);
-  } else {
-    window.app.navigate('map');
-  }
-};
 
 // ===== 速度控制 =====
 let battleSpeed = parseInt(localStorage.getItem('battle_speed')) || 1;
