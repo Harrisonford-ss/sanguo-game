@@ -567,6 +567,7 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
         ${!won ? '<p style="color:#ccc;font-size:13px">升级武将再来挑战！</p>' : ''}
         <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px">
           ${won ? '<button class="btn btn-primary" onclick="window.app.navigate(\'quiz\')">去答题</button>' : ''}
+          ${won && stages.find(s => s.id === stage.id + 1) ? `<button class="btn" style="background:linear-gradient(135deg,#4caf50,#388e3c);color:white;font-weight:700;border:none" onclick="window._goNextStage(${stage.id},'${difficulty}')">⚔️ 下一关</button>` : ''}
           <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.battleModule.startStageBattle(${stage.id},'${difficulty}')">🔄 再来</button>
           <button class="btn" style="background:#fff;color:#333;font-weight:700;border:none" onclick="window.app.navigate('map')">🏠 返回</button>
         </div>
@@ -574,6 +575,18 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
     logEl.scrollTop = logEl.scrollHeight;
   }
 }
+
+window._goNextStage = function(currentId, difficulty) {
+  const next = stages.find(s => s.id === currentId + 1);
+  if (!next) { window.app.navigate('map'); return; }
+  // 检查下一关是否已解锁
+  const totalStars = gameState.totalStars;
+  if (totalStars >= next.unlockStars) {
+    window.battleModule.startStageBattle(next.id, difficulty);
+  } else {
+    window.app.navigate('map');
+  }
+};
 
 // ===== 速度控制 =====
 let battleSpeed = parseInt(localStorage.getItem('battle_speed')) || 1;
