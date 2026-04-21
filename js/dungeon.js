@@ -1282,6 +1282,10 @@ async function doBoss() {
       }
     }
 
+    // 速度切换（必须在 container.innerHTML 之前声明，避免 TDZ 错误）
+    let _bossSpeed = Number(localStorage.getItem('dungeon-boss-speed')) || 1;
+    window._battleSpeed = _bossSpeed;
+
     container.innerHTML = `
       <div style="position:relative;min-height:calc(100vh - 130px);background:#1a1a2e;overflow:hidden">
         <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,#2a0a0a 0%,#1a1a2e 50%,#0a0a1e 100%)"></div>
@@ -1290,7 +1294,7 @@ async function doBoss() {
           <!-- 标题 + 速度 -->
           <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px">
             <span style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:700">👹 第${floor}层 BOSS战</span>
-            <button id="bg-speed-btn" onclick="window._dgToggleSpeed()" style="padding:6px 14px;border:none;border-radius:10px;background:rgba(255,255,255,0.15);color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">${_bossSpeed===2?'⏩ 2x':'▶️ 1x'}</button>
+            <button id="bg-speed-btn" onclick="window._dgToggleSpeed()" style="padding:6px 14px;border:none;border-radius:10px;background:rgba(255,255,255,0.15);color:white;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">${_bossSpeed === 2 ? '⏩ 2x' : '▶️ 1x'}</button>
           </div>
           <!-- BOSS（上方）-->
           <div style="display:flex;justify-content:space-around;align-items:flex-end;padding:0 4px">
@@ -1309,9 +1313,7 @@ async function doBoss() {
         </div>
       </div>`;
 
-    // 速度切换（读取上次设置）
-    let _bossSpeed = Number(localStorage.getItem('dungeon-boss-speed')) || 1;
-    window._battleSpeed = _bossSpeed;
+    // 速度切换按钮同步
     const _applySpeedBtn = () => {
       const btn = document.getElementById('bg-speed-btn');
       if (btn) {
@@ -1558,7 +1560,16 @@ async function doBoss() {
       window._dgOk2 = () => { clearInterval(cdTimer); closePopup(); genMap(); render(); resolve(); };
     }
 
-    runBossFight();
+    runBossFight().catch(e => {
+      console.error('[dungeon] boss fight error:', e);
+      // 出错时强制进入下一层，不卡死
+      floor++;
+      hp = Math.min(maxHp, hp + Math.round(maxHp * 0.3));
+      closePopup();
+      genMap();
+      render();
+      resolve();
+    });
   });
 }
 
