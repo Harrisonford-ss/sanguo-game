@@ -1546,8 +1546,16 @@ async function doBoss() {
           <div style="font-size:12px;color:#666">${statText}</div>
           ${old ? `<div style="font-size:11px;color:#999">（替换 ${old.icon}${old.name}）</div>` : ''}
         </div>
-        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._dgOk2()">继续深入！</button>`);
-      window._dgOk2 = () => { closePopup(); genMap(); render(); resolve(); };
+        <p id="dg-countdown" style="font-size:12px;color:#999;margin:4px 0">3秒后自动进入下一层…</p>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="window._dgOk2()">立即进入！</button>`);
+      let cd = 3;
+      const cdTimer = setInterval(() => {
+        cd--;
+        const el = document.getElementById('dg-countdown');
+        if (el) el.textContent = cd > 0 ? `${cd}秒后自动进入下一层…` : '正在进入…';
+        if (cd <= 0) { clearInterval(cdTimer); window._dgOk2(); }
+      }, 1000);
+      window._dgOk2 = () => { clearInterval(cdTimer); closePopup(); genMap(); render(); resolve(); };
     }
 
     runBossFight();
