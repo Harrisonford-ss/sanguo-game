@@ -107,7 +107,8 @@
           <div class="entry-bg" style="background-image:url('images/entries/entry_rank.webp')"></div>
           <div class="entry-info"><span class="entry-icon">🏆</span><span class="entry-title">擂台</span></div>
         </button>
-        <button class="entry-card" onclick="window.app.navigate('achievements')">
+        <button class="entry-card" onclick="window.app.navigate('achievements')" style="position:relative">
+          <span id="home-ach-dot" style="display:none;position:absolute;top:8px;right:8px;width:10px;height:10px;background:#f44336;border-radius:50%;border:2px solid #fff;z-index:2"></span>
           <div class="entry-bg" style="background-image:url('images/entries/entry_achievements.webp')"></div>
           <div class="entry-info">
             <span class="entry-icon">🏅</span>
@@ -333,7 +334,8 @@
         <span class="tab-icon">🏆</span>
         <span class="tab-label">擂台</span>
       </button>
-      <button class="tab" data-screen="achievements" onclick="window.app.navigate('achievements')">
+      <button class="tab" data-screen="achievements" onclick="window.app.navigate('achievements')" style="position:relative">
+        <span id="tab-ach-dot" style="display:none;position:absolute;top:6px;right:10px;width:8px;height:8px;background:#f44336;border-radius:50%;border:1.5px solid #fff"></span>
         <span class="tab-icon">🏅</span>
         <span class="tab-label">成就</span>
       </button>

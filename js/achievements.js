@@ -251,7 +251,9 @@ export const TOTAL_MILESTONES = SINGLE.length + STAGED.reduce((n, a) => n + a.st
 
 function stageKey(id, idx) { return `${id}_${idx}`; }
 function isSingleUnlocked(id) { return gameState.isAchievementUnlocked(id); }
+function isSingleClaimed(id)  { return gameState.isAchievementClaimed(id); }
 function isStageUnlocked(id, idx) { return gameState.isAchievementUnlocked(stageKey(id, idx)); }
+function isStageClaimed(id, idx)  { return gameState.isAchievementClaimed(stageKey(id, idx)); }
 
 function currentStageIndex(id) {
   const ach = STAGED.find(a => a.id === id);
@@ -279,6 +281,20 @@ export function unlockedMilestones() {
   return n;
 }
 
+// 是否有已达成但未领取的成就
+function hasUnclaimed() {
+  for (const a of SINGLE) {
+    if (isSingleUnlocked(a.id) && !isSingleClaimed(a.id)) return true;
+  }
+  for (const a of STAGED) {
+    const cur = currentStageIndex(a.id);
+    for (let i = 0; i <= cur; i++) {
+      if (!isStageClaimed(a.id, i)) return true;
+    }
+  }
+  return false;
+}
+
 // ===== 奖励 =====
 function rewardText(reward) {
   if (!reward) return '';
@@ -296,7 +312,54 @@ function grantReward(reward) {
   if (reward.quiz)  gameState.addQuizCoins(reward.quiz);
 }
 
-// ===== 检查与解锁 =====
+// ===== 领取成就奖励 =====
+function claimAndShow(key, icon, name, reward) {
+  if (!gameState.claimAchievement(key)) return; // already claimed
+  grantReward(reward);
+  const rw = rewardText(reward);
+  showClaimPopup(icon, name, rw);
+  updateHomeBadge();
+  renderAchievements();
+}
+
+window._claimAchievement = function(key, icon, name, rewardJson) {
+  const reward = JSON.parse(rewardJson);
+  claimAndShow(key, icon, name, reward);
+};
+
+function showClaimPopup(icon, name, rwText) {
+  // Remove any existing claim popup
+  document.getElementById('ach-claim-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'ach-claim-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:280px;width:86%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);animation:achPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both">
+      <div style="font-size:52px;margin-bottom:8px">${icon}</div>
+      <div style="font-size:11px;color:#9c27b0;font-weight:700;letter-spacing:1px;margin-bottom:4px">🏆 成就达成！</div>
+      <div style="font-size:17px;font-weight:800;margin-bottom:12px">${name}</div>
+      ${rwText ? `
+        <div style="background:linear-gradient(135deg,#fff8e1,#fffde7);border:1.5px solid #f5a623;border-radius:12px;padding:10px 16px;margin-bottom:16px">
+          <div style="font-size:11px;color:#888;margin-bottom:4px">获得奖励</div>
+          <div style="font-size:18px;font-weight:800;color:#e65100">${rwText}</div>
+        </div>` : ''}
+      <button onclick="document.getElementById('ach-claim-overlay').remove()"
+        style="width:100%;padding:12px;background:linear-gradient(135deg,#7b1fa2,#ab47bc);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
+        太好了！
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  if (!document.getElementById('ach-pop-style')) {
+    const st = document.createElement('style');
+    st.id = 'ach-pop-style';
+    st.textContent = `@keyframes achPop{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}`;
+    document.head.appendChild(st);
+  }
+}
+
+// ===== 检查与解锁（只标记达成，不发奖励）=====
 export function checkAchievements(extra = {}) {
   const s = gameState.data;
   let anyNew = false;
@@ -307,8 +370,6 @@ export function checkAchievements(extra = {}) {
       if (ach.check(s, extra)) {
         if (gameState.unlockAchievement(ach.id)) {
           anyNew = true;
-          grantReward(ach.reward);
-          showUnlockToast(ach.icon, ach.name, rewardText(ach.reward));
         }
       }
     } catch(e) {}
@@ -322,40 +383,13 @@ export function checkAchievements(extra = {}) {
       if (val >= stage.threshold) {
         if (gameState.unlockAchievement(stageKey(ach.id, i))) {
           anyNew = true;
-          grantReward(stage.reward);
-          showUnlockToast(ach.icon, `${ach.name} ${stage.label}`, rewardText(stage.reward));
         }
       } else break;
     }
   }
 
+  if (anyNew) updateHomeBadge();
   return anyNew;
-}
-
-// ===== Toast =====
-function showUnlockToast(icon, title, rwText) {
-  if (!document.getElementById('toast-style')) {
-    const st = document.createElement('style');
-    st.id = 'toast-style';
-    st.textContent = `@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}`;
-    document.head.appendChild(st);
-  }
-  const toast = document.createElement('div');
-  toast.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a237e,#283593);color:#fff;padding:10px 18px;border-radius:14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,0.35);z-index:9999;font-size:13px;max-width:300px;animation:toastIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;`;
-  toast.innerHTML = `
-    <span style="font-size:26px">${icon}</span>
-    <div>
-      <div style="font-size:10px;opacity:0.7;margin-bottom:2px">🏆 成就解锁！</div>
-      <div style="font-weight:700">${title}</div>
-      ${rwText ? `<div style="font-size:11px;color:#ffd54f;margin-top:3px;font-weight:600">${rwText}</div>` : ''}
-    </div>`;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.style.transition = 'opacity 0.4s, transform 0.4s';
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(-50%) translateY(10px)';
-    setTimeout(() => toast.remove(), 400);
-  }, 2800);
 }
 
 // ===== 初始化 =====
@@ -365,17 +399,24 @@ export function initAchievements() {
     updateHomeBadge();
     if (window.app?.currentScreen === 'achievements') renderAchievements();
   });
+  gameState.on('achievement-claimed', () => {
+    updateHomeBadge();
+  });
   ['stats-changed','coins-changed','cards-changed','stage-changed'].forEach(ev =>
     gameState.on(ev, () => checkAchievements())
   );
   updateHomeBadge();
-  // 启动时检测一次，处理已满足条件的成就
   setTimeout(() => checkAchievements(), 300);
 }
 
 function updateHomeBadge() {
   const text = `${unlockedMilestones()}/${TOTAL_MILESTONES}`;
   document.querySelectorAll('#home-ach-count').forEach(el => el.textContent = text);
+
+  const unclaimed = hasUnclaimed();
+  document.querySelectorAll('#home-ach-dot, #tab-ach-dot').forEach(el => {
+    el.style.display = unclaimed ? 'block' : 'none';
+  });
 }
 
 // ===== 渲染 =====
@@ -424,15 +465,24 @@ const STAGE_COLORS = ['#cd7f32','#9e9e9e','#f5a623'];
 const STAGE_BGS    = ['#fff3e0','#f5f5f5','#fff8e1'];
 
 function renderSingleCard(ach) {
-  const done = isSingleUnlocked(ach.id);
+  const unlocked = isSingleUnlocked(ach.id);
+  const claimed  = isSingleClaimed(ach.id);
+  const claimable = unlocked && !claimed;
   const rw = rewardText(ach.reward);
+  const rewardJson = JSON.stringify(ach.reward).replace(/"/g, '&quot;');
+  const nameEsc = ach.name.replace(/'/g, "\\'");
+  const iconEsc = ach.icon.replace(/'/g, "\\'");
+
   return `
-    <div style="background:${done?'#f3e5f5':'#f5f5f5'};border:2px solid ${done?'#ab47bc':'transparent'};border-radius:12px;padding:10px;position:relative;${done?'':'filter:saturate(0.25) opacity(0.55)'}">
-      ${done?`<div style="position:absolute;top:6px;right:7px;font-size:10px;color:#ab47bc;font-weight:700">✓</div>`:''}
+    <div onclick="${claimable ? `window._claimAchievement('${ach.id}','${iconEsc}','${nameEsc}','${rewardJson}')` : ''}"
+      style="background:${claimable?'#f9fbe7':unlocked?'#f3e5f5':'#f5f5f5'};border:2px solid ${claimable?'#aed581':unlocked?'#ab47bc':'transparent'};border-radius:12px;padding:10px;position:relative;cursor:${claimable?'pointer':'default'};${!unlocked?'filter:saturate(0.25) opacity(0.55)':''}${claimable?';box-shadow:0 2px 8px rgba(174,213,129,0.4)':''}">
+      ${claimed ? `<div style="position:absolute;top:6px;right:7px;font-size:10px;color:#ab47bc;font-weight:700">✓</div>` : ''}
+      ${claimable ? `<div style="position:absolute;top:5px;right:6px;background:#f44336;width:8px;height:8px;border-radius:50%"></div>` : ''}
       <div style="font-size:26px;margin-bottom:5px">${ach.icon}</div>
       <div style="font-size:12px;font-weight:700;line-height:1.3">${ach.name}</div>
       <div style="font-size:10px;color:#888;margin-top:3px;line-height:1.4">${ach.desc}</div>
-      ${rw?`<div style="font-size:10px;color:${done?'#7b1fa2':'#aaa'};margin-top:5px;font-weight:600">${rw}</div>`:''}
+      ${rw ? `<div style="font-size:10px;color:${claimed?'#7b1fa2':claimable?'#558b2f':'#aaa'};margin-top:5px;font-weight:600">${rw}</div>` : ''}
+      ${claimable ? `<div style="margin-top:7px;background:#7cb342;color:#fff;font-size:10px;font-weight:700;padding:3px 0;border-radius:6px;text-align:center">点击领取</div>` : ''}
     </div>`;
 }
 
@@ -444,8 +494,11 @@ function renderStagedCard(ach) {
   const nextStage = hasNext ? ach.stages[nextIdx] : null;
   const pct = hasNext ? Math.min(100, Math.round(val / nextStage.threshold * 100)) : 100;
 
+  // Check if any stage is claimable
+  const anyClaimable = cur >= 0 && ach.stages.slice(0, cur + 1).some((_, i) => !isStageClaimed(ach.id, i));
+
   return `
-    <div style="background:#fafafa;border:1.5px solid #e0e0e0;border-radius:14px;padding:12px;${cur<0?'filter:saturate(0.3) opacity(0.6)':''}">
+    <div style="background:#fafafa;border:1.5px solid ${anyClaimable?'#aed581':'#e0e0e0'};border-radius:14px;padding:12px;${cur<0?'filter:saturate(0.3) opacity(0.6)':''}${anyClaimable?';box-shadow:0 2px 8px rgba(174,213,129,0.35)':''}">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <span style="font-size:28px">${ach.icon}</span>
         <div style="flex:1">
@@ -457,12 +510,21 @@ function renderStagedCard(ach) {
       <div style="display:flex;gap:5px;margin-bottom:8px">
         ${ach.stages.map((stage, i) => {
           const done = i <= cur;
+          const stageClaimed = isStageClaimed(ach.id, i);
+          const stageClaimable = done && !stageClaimed;
           const rw = rewardText(stage.reward);
-          return `<div style="flex:1;background:${done?STAGE_BGS[i]:'#f0f0f0'};border:1.5px solid ${done?STAGE_COLORS[i]:'#ddd'};border-radius:8px;padding:6px 4px;text-align:center">
-            ${done?`<div style="font-size:9px;color:${STAGE_COLORS[i]};font-weight:700;margin-bottom:1px">✓</div>`:''}
+          const rewardJson = JSON.stringify(stage.reward).replace(/"/g, '&quot;');
+          const key = `${ach.id}_${i}`;
+          const nameEsc = (`${ach.name} ${stage.label}`).replace(/'/g, "\\'");
+          const iconEsc = ach.icon.replace(/'/g, "\\'");
+          return `<div onclick="${stageClaimable ? `window._claimAchievement('${key}','${iconEsc}','${nameEsc}','${rewardJson}')` : ''}"
+            style="flex:1;background:${stageClaimable?'#f9fbe7':done?STAGE_BGS[i]:'#f0f0f0'};border:1.5px solid ${stageClaimable?'#aed581':done?STAGE_COLORS[i]:'#ddd'};border-radius:8px;padding:6px 4px;text-align:center;cursor:${stageClaimable?'pointer':'default'};position:relative">
+            ${stageClaimed ? `<div style="font-size:9px;color:${STAGE_COLORS[i]};font-weight:700;margin-bottom:1px">✓</div>` : ''}
+            ${stageClaimable ? `<div style="position:absolute;top:3px;right:3px;background:#f44336;width:6px;height:6px;border-radius:50%"></div>` : ''}
             <div style="font-size:10px;font-weight:600;color:${done?'#333':'#aaa'};line-height:1.3">${stage.label}</div>
             <div style="font-size:9px;color:${done?'#666':'#bbb'};margin-top:2px">${stage.threshold.toLocaleString()}</div>
-            ${rw?`<div style="font-size:9px;color:${done?STAGE_COLORS[i]:'#ccc'};margin-top:2px;font-weight:600">${rw}</div>`:''}
+            ${rw ? `<div style="font-size:9px;color:${stageClaimed?STAGE_COLORS[i]:stageClaimable?'#558b2f':'#ccc'};margin-top:2px;font-weight:600">${rw}</div>` : ''}
+            ${stageClaimable ? `<div style="margin-top:4px;background:#7cb342;color:#fff;font-size:8px;font-weight:700;padding:2px 0;border-radius:4px">领取</div>` : ''}
           </div>`;
         }).join('')}
       </div>

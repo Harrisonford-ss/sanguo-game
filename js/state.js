@@ -51,6 +51,7 @@ const defaultState = {
   cardUpgradeCount: 0,
   maxCardLevel: 0,
   achievementsUnlocked: {},
+  achievementsClaimed: {},
 };
 
 class GameState {
@@ -448,6 +449,19 @@ class GameState {
     this.data.achievementsUnlocked[id] = Date.now();
     this.save();
     this.emit('achievement-unlocked');
+    return true;
+  }
+
+  isAchievementClaimed(id) {
+    return !!(this.data.achievementsClaimed || {})[id];
+  }
+
+  claimAchievement(id) {
+    if (!this.data.achievementsClaimed) this.data.achievementsClaimed = {};
+    if (this.data.achievementsClaimed[id]) return false;
+    this.data.achievementsClaimed[id] = Date.now();
+    this.save();
+    this.emit('achievement-claimed');
     return true;
   }
 
