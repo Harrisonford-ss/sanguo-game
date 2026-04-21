@@ -118,7 +118,7 @@ const MAX_ADVISORS = 2;
 const SAVE_KEY = 'monopoly_save_v6';
 const MAX_GARRISON = 20;  // 每城最多驻兵
 const MAX_TROOPS   = 30;  // 兵力上限
-const TROOP_REGEN  = 3;   // 每回合自动补充兵力
+const TROOP_REGEN  = 2;   // 每回合自动补充兵力
 let garrison = {};        // { cityId: number } 各城驻兵数
 // 升级费用：minor 6/10，major 10/14
 const UPGRADE_COST_MAJOR = [0, 10, 14];
@@ -1327,46 +1327,14 @@ async function doAiLandEnemy(who, tile, defOwner) {
   }
 }
 
-// 玩家落在敌城：选择攻城或交税
+// 玩家落在敌城：先选攻城或交税，攻城失败或选交税时再处理金币不足
 async function doLandEnemy(tile, defOwner) {
   const def = getPlayer(defOwner);
   const lv = cityLevels[tile.id] || 1;
   const defLabel = defOwner === 'ai' ? '曹操' : '孙权';
   const taxAmount = Math.max(2, 3 + def.cities.length + UPGRADE_TAX[lv]);
-  const needSell = P.coins < taxAmount;
 
-  // 金币不足：先弹窗告知将变卖城池
-  if (needSell) {
-    const ownedCities = P.cities.filter(id => ownership[id] === 'player');
-    const hasCities = ownedCities.length > 0;
-    await new Promise(resolve => {
-      popup(`<div style="font-size:32px">🏚️</div>
-        <h4 style="margin:4px 0;color:#c62828">金币不足以缴税！</h4>
-        <p style="font-size:13px;color:#666;margin:8px 0">需缴 <b>${taxAmount}💰</b>，当前仅有 <b>${P.coins}💰</b><br>
-        ${hasCities ? '将随机变卖一座己方城池凑足税款' : '城池已尽，将倾尽所有'}</p>
-        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._mc()">确认</button>`);
-      window._mc = () => { closePopup(); resolve(); };
-    });
-    if (hasCities) {
-      const sold = sellRandomCity('player');
-      if (sold) {
-        log(`🏚️ 金币不足，变卖${sold.cityName}获得${sold.salePrice}💰`);
-        await new Promise(resolve => {
-          popup(`<div style="font-size:32px">🏚️</div>
-            <h4 style="margin:4px 0">变卖城池</h4>
-            <p style="font-size:13px;color:#666;margin:8px 0">
-              <b>${sold.cityName}</b> 已变卖 +${sold.salePrice}💰<br>
-              城池归还为无主之地
-            </p>
-            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._mc()">继续</button>`);
-          window._mc = () => { closePopup(); resolve(); };
-        });
-      }
-    }
-  }
-
-  const actualTax = Math.min(taxAmount, P.coins);
-
+  // ===== 第一步：先选择攻城还是交税 =====
   const choice = await new Promise(resolve => {
     popup(`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
@@ -1381,11 +1349,11 @@ async function doLandEnemy(tile, defOwner) {
         <button onclick="window._ml('attack')" style="text-align:left;padding:9px 12px;border-radius:9px;
           border:1.5px solid #ef5350;background:#fff8f8;cursor:pointer;font-family:inherit">
           <div style="font-weight:700;font-size:12px;color:#c62828">⚔️ 发起攻城</div>
-          <div style="font-size:10px;color:#888;margin-top:2px">掷骰对决，胜则占领，败则缴税+20%</div>
+          <div style="font-size:10px;color:#888;margin-top:2px">掷骰对决，胜则占领，败则缴税</div>
         </button>
         <button onclick="window._ml('tax')" style="text-align:left;padding:9px 12px;border-radius:9px;
           border:1.5px solid #ddd;background:#fafafa;cursor:pointer;font-family:inherit">
-          <div style="font-weight:700;font-size:12px">💰 直接交税 -${actualTax}💰</div>
+          <div style="font-weight:700;font-size:12px">💰 直接交税 -${taxAmount}💰</div>
           <div style="font-size:10px;color:#888;margin-top:2px">和平通过，不发生战斗</div>
         </button>
       </div>`);
@@ -1393,12 +1361,53 @@ async function doLandEnemy(tile, defOwner) {
   });
 
   if (choice === 'attack') {
+    // 攻城（失败后交税逻辑在 doAttack 内部处理）
     await doAttack('player', tile);
   } else {
-    P.coins -= actualTax;
-    def.coins += actualTax;
-    log(`💰 过路费 ${tile.name} -${actualTax}💰`);
-    renderStatus();
+    // ===== 选择交税：金币不足则先变卖城池 =====
+    await _payTax('player', tile, taxAmount, defOwner, defLabel);
+  }
+}
+
+// 缴税辅助：金币不足先变卖城池
+async function _payTax(who, tile, taxAmount, defOwner, defLabel) {
+  const atk = who === 'player' ? P : getPlayer(who);
+  const def = getPlayer(defOwner);
+
+  if (atk.coins < taxAmount) {
+    const ownedCities = atk.cities.filter(id => ownership[id] === who);
+    const hasCities = ownedCities.length > 0;
+    await new Promise(resolve => {
+      popup(`<div style="font-size:32px">🏚️</div>
+        <h4 style="margin:4px 0;color:#c62828">金币不足以缴税！</h4>
+        <p style="font-size:13px;color:#666;margin:8px 0">需缴 <b>${taxAmount}💰</b>，当前仅有 <b>${atk.coins}💰</b><br>
+        ${hasCities ? '将随机变卖一座己方城池凑足税款' : '城池已尽，将倾尽所有'}</p>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._mc()">确认</button>`);
+      window._mc = () => { closePopup(); resolve(); };
+    });
+    if (hasCities) {
+      const sold = sellRandomCity(who);
+      if (sold) {
+        log(`🏚️ 金币不足，变卖${sold.cityName}获得${sold.salePrice}💰`);
+        await new Promise(resolve => {
+          popup(`<div style="font-size:32px">🏚️</div>
+            <h4 style="margin:4px 0">变卖城池</h4>
+            <p style="font-size:13px;color:#666;margin:8px 0">
+              <b>${sold.cityName}</b> 已变卖 +${sold.salePrice}💰<br>城池归还为无主之地
+            </p>
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._mc()">继续</button>`);
+          window._mc = () => { closePopup(); resolve(); };
+        });
+      }
+    }
+  }
+
+  const actualTax = Math.min(taxAmount, atk.coins);
+  atk.coins -= actualTax;
+  def.coins += actualTax;
+  log(`💰 过路费 ${tile.name} -${actualTax}💰`);
+  renderStatus();
+  if (who === 'player') {
     await new Promise(resolve => {
       popup(`<div style="font-size:32px">💰</div>
         <h4 style="margin:4px 0">缴纳过路费</h4>
@@ -1497,6 +1506,25 @@ async function doAttack(who, tile) {
   } else {
     tax = Math.max(2, 3 + def.cities.length + UPGRADE_TAX[lv]);
     if (tactic === 'blitz') tax = Math.floor(tax * 1.2); // 强攻败了多缴20%
+    // 金币不足：先变卖城池（仅玩家需弹窗，AI直接处理）
+    if (atk.coins < tax) {
+      const ownedCities = atk.cities.filter(id => ownership[id] === who);
+      if (ownedCities.length > 0) {
+        const sold = sellRandomCity(who);
+        if (sold) {
+          log(`🏚️ ${who==='player'?'你':who==='ai'?'曹操':'孙权'} 金币不足，变卖${sold.cityName}获得${sold.salePrice}💰`);
+          if (who === 'player') {
+            await new Promise(resolve => {
+              popup(`<div style="font-size:32px">🏚️</div>
+                <h4 style="margin:4px 0;color:#c62828">攻城失败！金币不足</h4>
+                <p style="font-size:13px;color:#666;margin:8px 0">需缴税 <b>${tax}💰</b>，金币不足<br><b>${sold.cityName}</b> 被迫变卖 +${sold.salePrice}💰</p>
+                <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="window._mc()">继续</button>`);
+              window._mc = () => { closePopup(); resolve(); };
+            });
+          }
+        }
+      }
+    }
     tax = Math.min(tax, atk.coins);
     atk.coins -= tax;
     def.coins += tax;
