@@ -233,6 +233,9 @@ function leaveGame() {
 }
 
 function startGame() {
+  // 如果已有存档，恢复存档而不是开新局（防止刷新重复扣钱）
+  const existing = loadSave();
+  if (existing) { refresh(); return; }
   const stake = 30;
   // 金币不足时提示，仍允许进入（给0金开局）
   const deducted = gameState.spendGold(stake);
@@ -280,6 +283,8 @@ function render() {
   renderLog();
   renderAdvisors();
   renderBoard();
+  // 每次渲染后自动保存，防止刷新丢失进度
+  if (active) writeSave();
 }
 
 function renderStatus() {
