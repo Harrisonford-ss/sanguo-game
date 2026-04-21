@@ -555,9 +555,9 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
     }
     // 撒花
     for(let i=0;i<25;i++){const e=document.createElement('div');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=['#ef5350','#4caf50','#4a90d9','#f5a623'][i%4];e.style.animationDelay=Math.random()*0.5+'s';document.body.appendChild(e);setTimeout(()=>e.remove(),2000);}
-    // 3秒后自动进入下一关（若存在且已解锁）
+    // 3秒后自动进入下一关（若存在）
     const nextStage = stages.find(s => s.id === stage.id + 1);
-    if (nextStage && gameState.totalStars >= nextStage.unlockStars) {
+    if (nextStage) {
       setTimeout(() => window.battleModule.startStageBattle(nextStage.id, difficulty), 3000);
     }
   }
@@ -565,7 +565,7 @@ function showResult(won, surviving, stage, difficulty = 'normal') {
   const logEl = document.getElementById('b-log');
   if (logEl) {
     const nextStageForBtn = stages.find(s => s.id === stage.id + 1);
-    const hasNext = won && nextStageForBtn && gameState.totalStars >= nextStageForBtn.unlockStars;
+    const hasNext = won && !!nextStageForBtn;
     logEl.innerHTML += `
       <div style="text-align:center;padding:16px 0">
         <div style="font-size:32px;margin-bottom:4px">${won ? '🎉' : '😤'}</div>
