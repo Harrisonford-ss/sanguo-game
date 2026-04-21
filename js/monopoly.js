@@ -1710,12 +1710,15 @@ function _aiAutoGarrison(who) {
       if (a.tile?.major !== b.tile?.major) return a.tile?.major ? -1 : 1;
       return a.g - b.g;
     });
+  const RESERVE = 2; // keep at least 2 troops visible in status bar
   for (const c of cities) {
-    if (p.troops <= 0) break;
+    if (p.troops <= RESERVE) break;
     const space = MAX_GARRISON - c.g;
     if (space <= 0) continue;
     const ratio = 0.15 + Math.random() * 0.45; // 15%~60% 随机
-    const send = Math.min(space, Math.ceil(p.troops * ratio), p.troops);
+    const available = p.troops - RESERVE;
+    const send = Math.min(space, Math.ceil(available * ratio), available);
+    if (send <= 0) continue;
     garrison[c.id] = (garrison[c.id] || 0) + send;
     p.troops -= send;
   }
