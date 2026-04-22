@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v36
+// 三国志探险 - 三国大富翁（三方势力版）v37
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -182,49 +182,92 @@ function showStartScreen() {
   const hasGold = gold >= 30;
   const canStart = hasStamina && hasGold;
 
+  const staminaColor = hasStamina ? '#52c41a' : '#ff4d4f';
+  const goldColor    = hasGold    ? '#faad14' : '#ff4d4f';
+  const btnBg = canStart
+    ? 'linear-gradient(135deg,#f5a623 0%,#e8850a 100%)'
+    : 'linear-gradient(135deg,#bbb 0%,#999 100%)';
+
   c.innerHTML = `
-    <div style="padding:20px 16px;display:flex;flex-direction:column;gap:12px;height:100%;box-sizing:border-box;overflow-y:auto">
-      <div style="text-align:center;padding:16px 0 8px">
-        <div style="font-size:36px;margin-bottom:6px">🎲</div>
-        <h2 style="margin:0;font-size:20px;font-weight:900;color:#333;letter-spacing:1px">三国大富翁</h2>
-        <p style="margin:4px 0 0;font-size:12px;color:#999">三方争霸·占城称雄</p>
+    <div style="min-height:100%;background:linear-gradient(160deg,#1a0a00 0%,#2d1200 40%,#1a0a00 100%);display:flex;flex-direction:column;overflow-y:auto">
+
+      <!-- 顶部英雄区 -->
+      <div style="position:relative;padding:28px 16px 20px;text-align:center;overflow:hidden;flex-shrink:0">
+        <!-- 背景装饰圆 -->
+        <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(245,166,35,0.18) 0%,transparent 70%);pointer-events:none"></div>
+        <div style="position:relative;z-index:1">
+          <div style="font-size:52px;line-height:1;filter:drop-shadow(0 4px 12px rgba(245,166,35,0.6))">🎲</div>
+          <div style="margin-top:10px;font-size:24px;font-weight:900;color:#ffe082;letter-spacing:3px;text-shadow:0 2px 8px rgba(0,0,0,0.6)">三国大富翁</div>
+          <div style="margin-top:4px;font-size:12px;color:rgba(255,224,130,0.55);letter-spacing:2px">三方争霸 · 占城称雄</div>
+          <!-- 三方势力标签 -->
+          <div style="display:flex;justify-content:center;gap:8px;margin-top:12px">
+            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(74,144,217,0.2);border:1px solid rgba(74,144,217,0.5);color:#90caf9">⚡ 曹魏</span>
+            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.5);color:#a5d6a7">🌟 蜀汉</span>
+            <span style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(239,83,80,0.2);border:1px solid rgba(239,83,80,0.5);color:#ef9a9a">🔥 东吴</span>
+          </div>
+        </div>
       </div>
 
-      <div style="background:#fffbf0;border:1px solid #ffe082;border-radius:12px;padding:12px 14px">
-        <div style="font-size:12px;font-weight:700;color:#e65100;margin-bottom:8px">📖 游戏规则</div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>🎲</span><span>每回合掷骰子在地图行军</span></div>
-          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>🏰</span><span>落在空城答3题中2题并花金币可占领，大城10金·小城5金</span></div>
-          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>⚔️</span><span>落在敌城掷骰对战，胜者掠夺金币并可夺城</span></div>
-          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap=6px"><span>💰</span><span>落在己城自动收税，升级城池可提升税收</span></div>
-          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>🏆</span><span>持续<b>20回合</b>后自动结算，城池最多者获胜</span></div>
-          <div style="font-size:11.5px;color:#e53935;display:flex;align-items:flex-start;gap:6px"><span>📊</span><span>结算时所有资产折算为积分（需满20回合且获胜）</span></div>
+      <!-- 规则卡片 -->
+      <div style="margin:0 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,224,130,0.2);border-radius:14px;padding:14px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,224,130,0.7);letter-spacing:1px;margin-bottom:10px">📖 游戏规则</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="font-size:14px;flex-shrink:0;margin-top:1px">🎲</span>
+            <span style="font-size:11.5px;color:rgba(255,255,255,0.75);line-height:1.5">每回合掷骰子在地图行军，随机触发事件</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="font-size:14px;flex-shrink:0;margin-top:1px">🏰</span>
+            <span style="font-size:11.5px;color:rgba(255,255,255,0.75);line-height:1.5">落在空城答题并花金币可占领（大城10金·小城5金）</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="font-size:14px;flex-shrink:0;margin-top:1px">⚔️</span>
+            <span style="font-size:11.5px;color:rgba(255,255,255,0.75);line-height:1.5">落在敌城掷骰对战，胜者掠夺金币并可夺城</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span style="font-size:14px;flex-shrink:0;margin-top:1px">💰</span>
+            <span style="font-size:11.5px;color:rgba(255,255,255,0.75);line-height:1.5">落在己城自动收税，升级城池提升税收</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(255,224,130,0.08);border-radius:8px;border-left:2px solid rgba(255,224,130,0.4)">
+            <span style="font-size:14px;flex-shrink:0;margin-top:1px">📊</span>
+            <span style="font-size:11.5px;color:#ffe082;line-height:1.5">20回合以内结算游戏不获得积分；结算时所有资产折算为积分</span>
+          </div>
         </div>
       </div>
 
-      <div style="background:${canStart?'#f1f8e9':'#fff3e0'};border:1px solid ${canStart?'#aed581':'#ffb74d'};border-radius:12px;padding:12px 14px">
-        <div style="font-size:12px;font-weight:700;color:${canStart?'#33691e':'#e65100'};margin-bottom:8px">💸 开局费用</div>
-        <div style="display:flex;gap:16px;justify-content:center">
-          <div style="text-align:center">
-            <div style="font-size:18px;font-weight:900;color:${hasStamina?'#2e7d32':'#c62828'}">${stamina}<span style="font-size:12px;color:#888"> / ${gameState.staminaMax}</span></div>
-            <div style="font-size:11px;color:#888;margin-top:2px">体力（消耗3）</div>
-            ${!hasStamina ? `<div style="font-size:10px;color:#c62828;margin-top:2px">体力不足！等待恢复</div>` : ''}
+      <!-- 费用卡片 -->
+      <div style="margin:10px 14px 0;background:rgba(255,255,255,0.05);border:1px solid rgba(255,224,130,0.2);border-radius:14px;padding:14px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,224,130,0.7);letter-spacing:1px;margin-bottom:10px">💸 开局费用</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;text-align:center;border:1px solid ${hasStamina?'rgba(82,196,26,0.35)':'rgba(255,77,79,0.35)'}">
+            <div style="font-size:22px;font-weight:900;color:${staminaColor}">${stamina}<span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.4)"> / ${gameState.staminaMax}</span></div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px">当前体力</div>
+            <div style="margin-top:5px;display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${hasStamina?'rgba(82,196,26,0.15)':'rgba(255,77,79,0.15)'};color:${staminaColor}">
+              ${hasStamina ? '消耗 -3 ✓' : '不足！'}
+            </div>
           </div>
-          <div style="width:1px;background:#ddd"></div>
-          <div style="text-align:center">
-            <div style="font-size:18px;font-weight:900;color:${hasGold?'#f57c00':'#c62828'}">${gold}<span style="font-size:12px;color:#888"> 金币</span></div>
-            <div style="font-size:11px;color:#888;margin-top:2px">金币（消耗30）</div>
-            ${!hasGold ? `<div style="font-size:10px;color:#c62828;margin-top:2px">金币不足！</div>` : ''}
+          <div style="background:rgba(0,0,0,0.25);border-radius:10px;padding:10px;text-align:center;border:1px solid ${hasGold?'rgba(250,173,20,0.35)':'rgba(255,77,79,0.35)'}">
+            <div style="font-size:22px;font-weight:900;color:${goldColor}">${gold}<span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.4)"> 金</span></div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px">当前金币</div>
+            <div style="margin-top:5px;display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;background:${hasGold?'rgba(250,173,20,0.15)':'rgba(255,77,79,0.15)'};color:${goldColor}">
+              ${hasGold ? '消耗 -30 ✓' : '不足！'}
+            </div>
           </div>
         </div>
-        ${!hasGold ? `<div style="margin-top:8px;padding:6px 10px;background:rgba(255,152,0,0.1);border-radius:8px;font-size:10.5px;color:#e65100;text-align:center">💡 获取金币：完成每日任务 · 答题奖励 · 地图探险</div>` : ''}
+        ${!hasGold ? `
+        <div style="margin-top:10px;padding:7px 10px;background:rgba(255,152,0,0.12);border-radius:8px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">💡</span>
+          <span style="font-size:10.5px;color:rgba(255,193,7,0.85)">获取金币：完成每日任务 · 答题奖励 · 地图探险</span>
+        </div>` : ''}
       </div>
 
-      <div style="display:flex;gap:8px;padding-bottom:8px">
-        <button class="btn" style="flex:1;height:44px;font-size:14px;border-radius:10px" onclick="window.app.navigate('home')">返回</button>
-        <button class="btn btn-primary" style="flex:2;height:44px;font-size:15px;font-weight:700;border-radius:10px;${!canStart?'opacity:0.45;pointer-events:none':''}"
-          onclick="window.monopolyModule.startGame()">
-          ${canStart ? '开始游戏 🎲' : (!hasStamina ? '体力不足' : '金币不足')}
+      <!-- 底部按钮 -->
+      <div style="display:flex;gap:10px;padding:14px 14px 20px;margin-top:auto;flex-shrink:0">
+        <button style="flex:1;height:46px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.7);font-size:14px;cursor:pointer"
+          onclick="window.app.navigate('home')">返回</button>
+        <button style="flex:2.5;height:46px;border-radius:12px;border:none;background:${btnBg};color:${canStart?'#fff':'rgba(255,255,255,0.5)'};font-size:16px;font-weight:800;cursor:${canStart?'pointer':'not-allowed'};letter-spacing:1px;box-shadow:${canStart?'0 4px 16px rgba(245,166,35,0.45)':'none'}"
+          onclick="${canStart?'window.monopolyModule.startGame()':'void 0'}">
+          ${canStart ? '出征！🎲' : (!hasStamina ? '体力不足' : '金币不足')}
         </button>
       </div>
     </div>`;
