@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v35
+// 三国志探险 - 三国大富翁（三方势力版）v36
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -168,10 +168,66 @@ function refresh() {
     turn = 'player';
     render();
   } else if (!active) {
-    startGame();
+    showStartScreen();
   } else {
     render();
   }
+}
+
+function showStartScreen() {
+  const c = $('monopoly-container'); if (!c) return;
+  const stamina = gameState.stamina;
+  const gold = gameState.gold;
+  const hasStamina = stamina >= 3;
+  const hasGold = gold >= 30;
+  const canStart = hasStamina && hasGold;
+
+  c.innerHTML = `
+    <div style="padding:20px 16px;display:flex;flex-direction:column;gap:12px;height:100%;box-sizing:border-box;overflow-y:auto">
+      <div style="text-align:center;padding:16px 0 8px">
+        <div style="font-size:36px;margin-bottom:6px">🎲</div>
+        <h2 style="margin:0;font-size:20px;font-weight:900;color:#333;letter-spacing:1px">三国大富翁</h2>
+        <p style="margin:4px 0 0;font-size:12px;color:#999">三方争霸·占城称雄</p>
+      </div>
+
+      <div style="background:#fffbf0;border:1px solid #ffe082;border-radius:12px;padding:12px 14px">
+        <div style="font-size:12px;font-weight:700;color:#e65100;margin-bottom:8px">📖 游戏规则</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>🎲</span><span>每回合掷骰子在地图行军</span></div>
+          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>🏰</span><span>落在空城答3题中2题并花金币可占领，大城10金·小城5金</span></div>
+          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>⚔️</span><span>落在敌城掷骰对战，胜者掠夺金币并可夺城</span></div>
+          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap=6px"><span>💰</span><span>落在己城自动收税，升级城池可提升税收</span></div>
+          <div style="font-size:11.5px;color:#555;display:flex;align-items:flex-start;gap:6px"><span>🏆</span><span>持续<b>20回合</b>后自动结算，城池最多者获胜</span></div>
+          <div style="font-size:11.5px;color:#e53935;display:flex;align-items:flex-start;gap:6px"><span>📊</span><span>结算时所有资产折算为积分（需满20回合且获胜）</span></div>
+        </div>
+      </div>
+
+      <div style="background:${canStart?'#f1f8e9':'#fff3e0'};border:1px solid ${canStart?'#aed581':'#ffb74d'};border-radius:12px;padding:12px 14px">
+        <div style="font-size:12px;font-weight:700;color:${canStart?'#33691e':'#e65100'};margin-bottom:8px">💸 开局费用</div>
+        <div style="display:flex;gap:16px;justify-content:center">
+          <div style="text-align:center">
+            <div style="font-size:18px;font-weight:900;color:${hasStamina?'#2e7d32':'#c62828'}">${stamina}<span style="font-size:12px;color:#888"> / ${gameState.staminaMax}</span></div>
+            <div style="font-size:11px;color:#888;margin-top:2px">体力（消耗3）</div>
+            ${!hasStamina ? `<div style="font-size:10px;color:#c62828;margin-top:2px">体力不足！等待恢复</div>` : ''}
+          </div>
+          <div style="width:1px;background:#ddd"></div>
+          <div style="text-align:center">
+            <div style="font-size:18px;font-weight:900;color:${hasGold?'#f57c00':'#c62828'}">${gold}<span style="font-size:12px;color:#888"> 金币</span></div>
+            <div style="font-size:11px;color:#888;margin-top:2px">金币（消耗30）</div>
+            ${!hasGold ? `<div style="font-size:10px;color:#c62828;margin-top:2px">金币不足！</div>` : ''}
+          </div>
+        </div>
+        ${!hasGold ? `<div style="margin-top:8px;padding:6px 10px;background:rgba(255,152,0,0.1);border-radius:8px;font-size:10.5px;color:#e65100;text-align:center">💡 获取金币：完成每日任务 · 答题奖励 · 地图探险</div>` : ''}
+      </div>
+
+      <div style="display:flex;gap:8px;padding-bottom:8px">
+        <button class="btn" style="flex:1;height:44px;font-size:14px;border-radius:10px" onclick="window.app.navigate('home')">返回</button>
+        <button class="btn btn-primary" style="flex:2;height:44px;font-size:15px;font-weight:700;border-radius:10px;${!canStart?'opacity:0.45;pointer-events:none':''}"
+          onclick="window.monopolyModule.startGame()">
+          ${canStart ? '开始游戏 🎲' : (!hasStamina ? '体力不足' : '金币不足')}
+        </button>
+      </div>
+    </div>`;
 }
 
 function loadSave() {
@@ -207,25 +263,47 @@ function clearSave() {
   localStorage.removeItem(SAVE_KEY);
 }
 
+function calcSettleScore() {
+  // 当前等级城池价值 = TAX[lv] * 3（与游戏内出售价格一致）
+  let cityValue = 0;
+  for (const cid of P.cities) {
+    const tile = TILES.find(t => t.id === cid);
+    if (!tile) continue;
+    const lv = cityLevels[cid] || 1;
+    cityValue += (tile.major ? TAX_MAJOR[lv] : TAX_MINOR[lv]) * 3;
+  }
+  // 兵力：手中 + 各城驻兵，统一 1兵 = 2金
+  let totalTroops = P.troops;
+  for (const cid of P.cities) {
+    totalTroops += garrison[cid] || 0;
+  }
+  const totalAssets = P.coins + cityValue + totalTroops * 2;
+  return Math.max(1, Math.floor(totalAssets / 10));
+}
+
 function settle() {
   if (!active) return;
   const earned = P.coins;
   if (earned > 0) gameState.addGold(earned);
 
-  // 积分：金币 + 城池×10（算法待后续完善）
-  const score = earned + P.cities.length * 10;
   const won = P.cities.length >= AI.cities.length && P.cities.length >= SQ.cities.length;
+  // 20回合内结算或失败不计分
+  const score = (round >= 20 && won) ? calcSettleScore() : 0;
   gameState.recordMonopolySettle(score, won);
   if (window.authModule?.syncToCloud) window.authModule.syncToCloud().catch(() => {});
 
   clearSave();
-  popup(`<div style="font-size:40px">💰</div>
-    <h3 style="margin:6px 0">结算成功！</h3>
+  const scoreLine = score > 0
+    ? `<p style="font-size:13px;color:#667eea;font-weight:700;margin:4px 0">+${score} 大富翁积分 · 已上榜</p>`
+    : `<p style="font-size:11px;color:#aaa;margin:4px 0">${round < 20 ? '不足20回合，本局不计积分' : '失败，本局不计积分'}</p>`;
+
+  popup(`<div style="font-size:40px">${won ? '🏆' : '💰'}</div>
+    <h3 style="margin:6px 0">${won ? '胜利结算！' : '结算'}</h3>
     <p style="font-size:22px;font-weight:700;color:#f5a623">+${earned} 金币</p>
-    <p style="font-size:13px;color:#667eea;font-weight:700;margin:4px 0">+${score} 大富翁积分</p>
-    <p style="font-size:11px;color:#999;margin:4px 0 12px">城池 ${P.cities.length} 座 · 积分已上榜</p>
+    ${scoreLine}
+    <p style="font-size:11px;color:#999;margin:4px 0 12px">城池 ${P.cities.length} 座 · 第${round}回合</p>
     <button class="btn btn-primary" style="width:100%" onclick="window._mc()">开始新局</button>`);
-  window._mc = () => { closePopup(); active = false; startGame(); };
+  window._mc = () => { closePopup(); active = false; showStartScreen(); };
 }
 
 function leaveGame() {
@@ -244,8 +322,15 @@ function startGame() {
   // 如果已有存档，恢复存档而不是开新局（防止刷新重复扣钱）
   const existing = loadSave();
   if (existing) { refresh(); return; }
+  // 扣除体力（3点）
+  const s1 = gameState.spendStamina();
+  const s2 = gameState.spendStamina();
+  const s3 = gameState.spendStamina();
+  if (!s1 || !s2 || !s3) {
+    // 体力不足，退还已扣体力（不太可能，因为开始界面已校验）
+    showStartScreen(); return;
+  }
   const stake = 30;
-  // 金币不足时提示，仍允许进入（给0金开局）
   const deducted = gameState.spendGold(stake);
   const startCoins = deducted ? stake : 0;
   active = true; turn = 'player'; rolling = false; round = 1;
