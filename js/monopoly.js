@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v44
+// 三国志探险 - 三国大富翁（三方势力版）v45
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -2094,6 +2094,10 @@ function endGame(forcedWinner, timeupWinner) {
   const unifyBonus = (pWin && forcedWinner === 'player') ? 100 : 0;
   const goldEarned = pWin ? P.coins + unifyBonus : 0;
   if (goldEarned > 0) gameState.addGold(goldEarned);
+  // 记录单局最高金币（结算时玩家手中金币）
+  gameState.recordMonopolyMaxCoins(P.coins);
+  // 制霸天下（占领全部城池获胜）
+  if (pWin && forcedWinner === 'player') gameState.recordMonopolyUnify();
   const score = pWin ? calcSettleScore() : 0;
   gameState.recordMonopolySettle(score, pWin);
   if (window.authModule?.syncToCloud) window.authModule.syncToCloud().catch(() => {});

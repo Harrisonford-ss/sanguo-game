@@ -199,6 +199,50 @@ export const ACHIEVEMENTS = [
     ],
   },
   {
+    id: 'monopoly_score',
+    name: '积分霸主', icon: '📊',
+    stat: s => s.monopolyScore || 0,
+    statLabel: '积分',
+    stages: [
+      { label: '🥉 崭露头角', threshold: 1000,  reward: { gold: 50 } },
+      { label: '🥈 名震一方', threshold: 3000, reward: { gold: 150 } },
+      { label: '🥇 天下第一', threshold: 5000, reward: { gold: 400 } },
+    ],
+  },
+  {
+    id: 'monopoly_games',
+    name: '久经沙场', icon: '🎮',
+    stat: s => s.monopolyGames || 0,
+    statLabel: '局',
+    stages: [
+      { label: '🥉 初出茅庐', threshold: 5,  reward: { gold: 20 } },
+      { label: '🥈 身经百战', threshold: 20, reward: { gold: 60 } },
+      { label: '🥇 沙场老将', threshold: 50, reward: { gold: 150 } },
+    ],
+  },
+  {
+    id: 'monopoly_rich',
+    name: '富可敌国', icon: '💰',
+    stat: s => s.monopolyMaxCoins || 0,
+    statLabel: '金币（单局最高）',
+    stages: [
+      { label: '🥉 小有家财', threshold: 200,  reward: { gold: 30 } },
+      { label: '🥈 腰缠万贯', threshold: 500,  reward: { gold: 80 } },
+      { label: '🥇 富可敌国', threshold: 1000, reward: { gold: 150 } },
+    ],
+  },
+  {
+    id: 'monopoly_unify',
+    name: '制霸天下', icon: '👑',
+    stat: s => s.monopolyUnifyCount || 0,
+    statLabel: '次统一全图',
+    stages: [
+      { label: '🥉 初定天下', threshold: 3,  reward: { gold: 100 } },
+      { label: '🥈 再造乾坤', threshold: 10, reward: { gold: 250 } },
+      { label: '🥇 万古一帝', threshold: 20, reward: { gold: 500 } },
+    ],
+  },
+  {
     id: 'gacha_fan',
     name: '抽卡大师', icon: '💫',
     stat: s => s.totalGachaPulls || 0,

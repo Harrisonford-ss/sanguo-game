@@ -1,3 +1,4 @@
+// v45
 // 三国志探险 - 游戏状态管理
 import { characters } from '../data/characters.js';
 // 双货币系统：答题积分(quizCoins) + 抽卡积分(gachaCoins)
@@ -61,6 +62,9 @@ const defaultState = {
   dungeonMaxFloor: 0,
   monopolyScore: 0,
   monopolyWins: 0,
+  monopolyGames: 0,
+  monopolyMaxCoins: 0,
+  monopolyUnifyCount: 0,
   quizPerfectCount: 0,
   consecutiveWins: 0,
   maxConsecutiveWins: 0,
@@ -450,13 +454,31 @@ class GameState {
 
   recordMonopolySettle(score, won = false) {
     this.data.monopolyScore = (this.data.monopolyScore || 0) + score;
+    this.data.monopolyGames = (this.data.monopolyGames || 0) + 1;
     if (won) this.data.monopolyWins = (this.data.monopolyWins || 0) + 1;
     this.save();
     this.emit('stats-changed');
   }
 
-  get monopolyScore() { return this.data.monopolyScore || 0; }
-  get monopolyWins()  { return this.data.monopolyWins  || 0; }
+  recordMonopolyUnify() {
+    this.data.monopolyUnifyCount = (this.data.monopolyUnifyCount || 0) + 1;
+    this.save();
+    this.emit('stats-changed');
+  }
+
+  recordMonopolyMaxCoins(coins) {
+    if (coins > (this.data.monopolyMaxCoins || 0)) {
+      this.data.monopolyMaxCoins = coins;
+      this.save();
+      this.emit('stats-changed');
+    }
+  }
+
+  get monopolyScore()      { return this.data.monopolyScore      || 0; }
+  get monopolyWins()       { return this.data.monopolyWins       || 0; }
+  get monopolyGames()      { return this.data.monopolyGames      || 0; }
+  get monopolyMaxCoins()   { return this.data.monopolyMaxCoins   || 0; }
+  get monopolyUnifyCount() { return this.data.monopolyUnifyCount || 0; }
 
   recordTenPull() {
     this.data.tenPullCount = (this.data.tenPullCount || 0) + 1;
