@@ -1,4 +1,4 @@
-// 三国志探险 - 主应用路由与初始化
+// 三国志探险 - 主应用路由与初始化 v50
 
 import { gameState } from './state.js';
 import { initMap } from './map.js';

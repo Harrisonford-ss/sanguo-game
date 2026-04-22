@@ -62,7 +62,7 @@
           <span class="stat-pill-value" id="home-stamina">10/10</span>
           <span id="home-stamina-timer" style="font-size:10px;color:#aaa;margin-left:2px"></span>
         </div>
-        <div class="stat-pill" id="signin-pill" title="每日签到" onclick="window.signinModule?.showSignin()" style="cursor:pointer;position:relative;background:linear-gradient(135deg,#f5a623,#e8850a);border:none">
+        <div class="stat-pill" id="signin-pill" title="每日签到" onclick="if(window.signinModule){window.signinModule.showSignin()}else{alert('签到模块加载中，请稍后重试')}" style="cursor:pointer;position:relative;background:linear-gradient(135deg,#f5a623,#e8850a);border:none">
           <span class="stat-pill-icon">🗓️</span>
           <span class="stat-pill-value" style="color:#fff;font-weight:700">签到</span>
           <span id="signin-reddot" style="display:none;position:absolute;top:2px;right:2px;width:7px;height:7px;background:#ef5350;border-radius:50%;border:1.5px solid #fff"></span>
@@ -372,6 +372,6 @@
     </nav>
   </div>
 
-  <script type="module" src="js/app.js?v=50"></script>
+  <script type="module" src="js/app.js?v=51"></script>
 </body>
 </html>
