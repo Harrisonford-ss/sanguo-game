@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v37
+// 三国志探险 - 三国大富翁（三方势力版）v38
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -230,7 +230,7 @@ function showStartScreen() {
           </div>
           <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(255,224,130,0.08);border-radius:8px;border-left:2px solid rgba(255,224,130,0.4)">
             <span style="font-size:14px;flex-shrink:0;margin-top:1px">📊</span>
-            <span style="font-size:11.5px;color:#ffe082;line-height:1.5">20回合以内结算游戏不获得积分；结算时所有资产折算为积分</span>
+            <span style="font-size:11.5px;color:#ffe082;line-height:1.5">获胜时所有资产折算为积分上榜</span>
           </div>
         </div>
       </div>
@@ -330,15 +330,15 @@ function settle() {
   if (earned > 0) gameState.addGold(earned);
 
   const won = P.cities.length >= AI.cities.length && P.cities.length >= SQ.cities.length;
-  // 20回合内结算或失败不计分
-  const score = (round >= 20 && won) ? calcSettleScore() : 0;
+  // 获胜才计分
+  const score = won ? calcSettleScore() : 0;
   gameState.recordMonopolySettle(score, won);
   if (window.authModule?.syncToCloud) window.authModule.syncToCloud().catch(() => {});
 
   clearSave();
   const scoreLine = score > 0
     ? `<p style="font-size:13px;color:#667eea;font-weight:700;margin:4px 0">+${score} 大富翁积分 · 已上榜</p>`
-    : `<p style="font-size:11px;color:#aaa;margin:4px 0">${round < 20 ? '不足20回合，本局不计积分' : '失败，本局不计积分'}</p>`;
+    : `<p style="font-size:11px;color:#aaa;margin:4px 0">失败，本局不计积分</p>`;
 
   popup(`<div style="font-size:40px">${won ? '🏆' : '💰'}</div>
     <h3 style="margin:6px 0">${won ? '胜利结算！' : '结算'}</h3>
