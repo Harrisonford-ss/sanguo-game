@@ -158,19 +158,15 @@ body {
   height: 100%;
   height: 100dvh;
   overflow: hidden;
-  /* 微信/iOS 安全区 */
   padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
 }
 
 /* 微信浏览器：底部功能栏约50px，增加额外留白防止遮挡 */
-html.wechat body {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 50px);
-}
-
 html.wechat .tab-bar {
   bottom: 50px;
+  height: var(--tab-height);
+  padding-bottom: 0;
 }
 
 html.wechat .screen {
@@ -209,7 +205,7 @@ body {
   display: none;
   flex: 1;
   overflow-y: auto;
-  padding-bottom: calc(var(--tab-height) + 16px);
+  padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom) + 16px);
   -webkit-overflow-scrolling: touch;
 }
 
@@ -267,7 +263,8 @@ body {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  height: var(--tab-height);
+  height: calc(var(--tab-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
