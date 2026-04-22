@@ -22,21 +22,21 @@ export function refresh() {
   if (pe) pe.textContent = coins;
   const s1 = document.getElementById('gacha-single-btn');
   const s10 = document.getElementById('gacha-ten-btn');
-  if (s1) s1.disabled = coins < SINGLE_COST;
+  if (s1)  s1.disabled  = coins < SINGLE_COST;
   if (s10) s10.disabled = coins < TEN_COST;
 
-  const rareLeft  = Math.max(0, PITY_RARE   - gameState.gachaPityRare);
-  const legendLeft= Math.max(0, PITY_LEGEND - gameState.gachaPityLegend);
+  const rareLeft   = Math.max(0, PITY_RARE   - gameState.gachaPityRare);
+  const legendLeft = Math.max(0, PITY_LEGEND - gameState.gachaPityLegend);
+
   const pr = document.getElementById('gacha-pity-rare');
   const pl = document.getElementById('gacha-pity-legend');
   if (pr) pr.textContent = rareLeft;
   if (pl) pl.textContent = legendLeft;
 
-  // 进度条
   const barRare   = document.getElementById('gacha-bar-rare');
   const barLegend = document.getElementById('gacha-bar-legend');
-  if (barRare)   barRare.style.width   = `${((PITY_RARE - rareLeft)   / PITY_RARE)   * 100}%`;
-  if (barLegend) barLegend.style.width = `${((PITY_LEGEND - legendLeft)/ PITY_LEGEND) * 100}%`;
+  if (barRare)   barRare.style.width   = `${((PITY_RARE   - rareLeft)   / PITY_RARE)   * 100}%`;
+  if (barLegend) barLegend.style.width = `${((PITY_LEGEND - legendLeft) / PITY_LEGEND) * 100}%`;
 }
 
 // Banner 粒子
@@ -44,32 +44,31 @@ export function initBannerParticles() {
   const wrap = document.getElementById('gacha-particles');
   if (!wrap) return;
   wrap.innerHTML = '';
-  for (let i = 0; i < 18; i++) {
+  const colors = ['#ffd700','#d4b0ff','#7c4dff','#ffffff','#b39ddb','#ffe082'];
+  for (let i = 0; i < 24; i++) {
     const p = document.createElement('div');
-    const size = 2 + Math.random() * 3;
-    const x = Math.random() * 100;
-    const dur = 4 + Math.random() * 5;
-    const delay = Math.random() * 6;
-    const colors = ['#ffd700','#d4b0ff','#7c4dff','#fff','#f5a623'];
+    const size = 1.5 + Math.random() * 3;
+    const dur  = 5 + Math.random() * 6;
+    const del  = Math.random() * 8;
     p.style.cssText = `
       position:absolute;border-radius:50%;pointer-events:none;
       width:${size}px;height:${size}px;
-      left:${x}%;bottom:-10px;
+      left:${Math.random()*100}%;bottom:-10px;
       background:${colors[Math.floor(Math.random()*colors.length)]};
-      opacity:0;animation:bannerFloat ${dur}s ease-in ${delay}s infinite;
+      box-shadow:0 0 ${size*2}px currentColor;
+      opacity:0;animation:gwParticleRise ${dur}s ease-in ${del}s infinite;
     `;
     wrap.appendChild(p);
   }
-  // inject keyframe once
-  if (!document.getElementById('banner-float-style')) {
+  if (!document.getElementById('gw-particle-style')) {
     const s = document.createElement('style');
-    s.id = 'banner-float-style';
+    s.id = 'gw-particle-style';
     s.textContent = `
-      @keyframes bannerFloat {
-        0%   { transform: translateY(0) scale(1); opacity:0; }
-        10%  { opacity: 0.7; }
-        90%  { opacity: 0.3; }
-        100% { transform: translateY(-220px) scale(0.4); opacity:0; }
+      @keyframes gwParticleRise {
+        0%   { transform:translateY(0) scale(1); opacity:0; }
+        8%   { opacity:0.9; }
+        85%  { opacity:0.4; }
+        100% { transform:translateY(-240px) translateX(${Math.random()>0.5?'':'-'}${Math.random()*30}px) scale(0.3); opacity:0; }
       }
     `;
     document.head.appendChild(s);

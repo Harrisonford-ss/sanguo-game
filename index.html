@@ -158,62 +158,84 @@
     </section>
 
     <!-- 抽卡 -->
-    <section id="screen-gacha" class="screen">
-      <div id="gacha-container">
-        <!-- Banner -->
-        <div class="gacha-banner">
-          <div class="gacha-banner-particles" id="gacha-particles"></div>
-          <div class="gacha-banner-text">
-            <div class="gacha-banner-label">LIMITED</div>
-            <h3>武将召唤</h3>
-            <p>三国英豪，等你召唤</p>
+    <section id="screen-gacha" class="screen gw-screen">
+      <div id="gacha-container" class="gw-container">
+
+        <!-- 顶部光效Banner -->
+        <div class="gw-banner">
+          <div class="gw-banner-aurora"></div>
+          <div id="gacha-particles" class="gw-particles"></div>
+          <div class="gw-banner-body">
+            <div class="gw-banner-tag">LIMITED · 限时召唤</div>
+            <div class="gw-banner-title">武将召唤</div>
+            <div class="gw-banner-sub">三国英豪，等你召唤</div>
           </div>
-          <div class="gacha-banner-coins">💎 <span id="gacha-points">0</span></div>
+          <!-- 货币显示 -->
+          <div class="gw-coins-badge">
+            <span class="gw-coins-icon">💎</span>
+            <span class="gw-coins-val" id="gacha-points">0</span>
+          </div>
         </div>
 
-        <!-- 保底进度 -->
-        <div class="gacha-pity-wrap">
-          <div class="gacha-pity-row">
-            <span class="gacha-pity-label">⭐ 稀有保底</span>
-            <div class="gacha-pity-bar-wrap">
-              <div class="gacha-pity-bar rare" id="gacha-bar-rare"></div>
+        <!-- 保底追踪器 -->
+        <div class="gw-pity-section">
+          <div class="gw-pity-title">保底追踪</div>
+          <div class="gw-pity-cards">
+            <!-- 稀有保底 -->
+            <div class="gw-pity-card rare">
+              <div class="gw-pity-card-header">
+                <span class="gw-pity-card-icon">⭐</span>
+                <span class="gw-pity-card-label">稀有保底</span>
+              </div>
+              <div class="gw-pity-countdown" id="gacha-pity-rare">10</div>
+              <div class="gw-pity-countdown-unit">抽后必得</div>
+              <div class="gw-pity-track">
+                <div class="gw-pity-fill rare" id="gacha-bar-rare"></div>
+              </div>
             </div>
-            <span class="gacha-pity-num" id="gacha-pity-rare">10</span><span class="gacha-pity-unit">抽</span>
-          </div>
-          <div class="gacha-pity-row">
-            <span class="gacha-pity-label">🌟 传说保底</span>
-            <div class="gacha-pity-bar-wrap">
-              <div class="gacha-pity-bar legend" id="gacha-bar-legend"></div>
+            <!-- 传说保底 -->
+            <div class="gw-pity-card legend">
+              <div class="gw-pity-card-header">
+                <span class="gw-pity-card-icon">🌟</span>
+                <span class="gw-pity-card-label">传说保底</span>
+              </div>
+              <div class="gw-pity-countdown" id="gacha-pity-legend">30</div>
+              <div class="gw-pity-countdown-unit">抽后必得</div>
+              <div class="gw-pity-track">
+                <div class="gw-pity-fill legend" id="gacha-bar-legend"></div>
+              </div>
             </div>
-            <span class="gacha-pity-num" id="gacha-pity-legend">30</span><span class="gacha-pity-unit">抽</span>
           </div>
         </div>
 
-        <!-- 抽卡按钮 -->
-        <div class="gacha-buttons">
-          <button class="btn-gacha-single" id="gacha-single-btn" onclick="window.gachaModule.pull(1)">
-            <span class="gacha-btn-shine"></span>
-            <span class="gacha-btn-icon">✦</span>
-            <span class="gacha-btn-title">单抽</span>
-            <span class="gacha-btn-cost">10 💎</span>
+        <!-- 召唤按钮 -->
+        <div class="gw-pull-section">
+          <button class="gw-pull-btn gw-pull-single" id="gacha-single-btn" onclick="window.gachaModule.pull(1)">
+            <span class="gw-pull-shine"></span>
+            <div class="gw-pull-orb">✦</div>
+            <div class="gw-pull-info">
+              <span class="gw-pull-name">单次召唤</span>
+              <span class="gw-pull-cost">10 💎</span>
+            </div>
           </button>
-          <button class="btn-gacha-ten" id="gacha-ten-btn" onclick="window.gachaModule.pull(10)">
-            <span class="gacha-btn-shine"></span>
-            <span class="gacha-btn-icon">✦✦</span>
-            <span class="gacha-btn-title">十连抽</span>
-            <span class="gacha-btn-cost">90 💎</span>
+          <button class="gw-pull-btn gw-pull-ten" id="gacha-ten-btn" onclick="window.gachaModule.pull(10)">
+            <span class="gw-pull-shine"></span>
+            <div class="gw-pull-orb">✦✦</div>
+            <div class="gw-pull-info">
+              <span class="gw-pull-name">十连召唤</span>
+              <span class="gw-pull-cost">90 💎 <em>必出稀有</em></span>
+            </div>
           </button>
         </div>
 
-        <!-- 概率说明 -->
-        <div class="gacha-rates">
-          <span>普通 <b>70%</b></span>
-          <span class="rare-rate">稀有 <b>25%</b></span>
-          <span class="legend-rate">传说 <b>5%</b></span>
-          <span style="opacity:.5">· 10连必出稀有</span>
+        <!-- 概率 -->
+        <div class="gw-rates">
+          <div class="gw-rate-chip common">普通 <b>70%</b></div>
+          <div class="gw-rate-chip rare">稀有 <b>25%</b></div>
+          <div class="gw-rate-chip legend">传说 <b>5%</b></div>
         </div>
 
-        <div id="gacha-result" class="gacha-result hidden"></div>
+        <div id="gacha-result" class="hidden"></div>
       </div>
     </section>
 
