@@ -1,4 +1,4 @@
-// 三国志探险 - Supabase 客户端（轻量封装，不用SDK，直接 REST API）
+// 三国志探险 - Supabase v45 客户端（轻量封装，不用SDK，直接 REST API）
 
 const SUPABASE_URL = 'https://bszfcyftnpvfxjdqrikm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJzemZjeWZ0bnB2ZnhqZHFyaWttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0MzEwNjAsImV4cCI6MjA5MDAwNzA2MH0.MEh_yyAQxDTLzbKyVH9ZufMZfQDwwdUB20Ssieucagw';
@@ -175,20 +175,23 @@ export async function getFloorLeaderboard(limit = 30) {
 
 export async function getMonopolyLeaderboard(limit = 30) {
   const [saves, lb] = await Promise.all([
-    query('sanguo_saves', `select=user_id,game_data&limit=200`),
-    query('sanguo_leaderboard', `select=user_id,nickname,avatar,card_count,win_count&limit=200`)
+    query('sanguo_saves', `select=user_id,game_data&order=updated_at.desc&limit=1000`),
+    query('sanguo_leaderboard', `select=user_id,nickname,avatar,card_count,win_count&limit=1000`)
   ]);
   const lbMap = Object.fromEntries(lb.map(r => [r.user_id, r]));
-  return saves
-    .map(s => {
-      const score = s.game_data?.monopolyScore || 0;
-      const wins  = s.game_data?.monopolyWins  || 0;
-      const info  = lbMap[s.user_id] || {};
-      return { user_id: s.user_id, monopoly_score: score, monopoly_wins: wins, ...info };
-    })
-    .filter(r => r.monopoly_score > 0)
-    .sort((a, b) => b.monopoly_score - a.monopoly_score)
-    .slice(0, limit);
+  // 同一用户可能有多条存档（理论上不应有，做去重保护）
+  const seen = new Set();
+  const rows = [];
+  for (const s of saves) {
+    if (seen.has(s.user_id)) continue;
+    seen.add(s.user_id);
+    const score = s.game_data?.monopolyScore || 0;
+    const wins  = s.game_data?.monopolyWins  || 0;
+    if (score <= 0) continue;
+    const info = lbMap[s.user_id] || {};
+    rows.push({ user_id: s.user_id, monopoly_score: score, monopoly_wins: wins, ...info });
+  }
+  return rows.sort((a, b) => b.monopoly_score - a.monopoly_score).slice(0, limit);
 }
 
 // ===== 擂台 =====
