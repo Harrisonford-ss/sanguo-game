@@ -1,4 +1,4 @@
-// 三国志探险 - 每日签到 v48
+// 三国志探险 - 每日签到 v49
 
 import { gameState } from './state.js';
 import { characters } from '../data/characters.js';
@@ -36,8 +36,8 @@ const REWARDS = [
 
 export function initSignin() {
   window.signinModule = { showSignin, checkRedDot };
-  // 首页红点检测
-  updateRedDot();
+  // 延迟执行确保 DOM 就绪
+  setTimeout(updateRedDot, 0);
 }
 
 function updateRedDot() {

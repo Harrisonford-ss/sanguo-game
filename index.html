@@ -62,14 +62,11 @@
           <span class="stat-pill-value" id="home-stamina">10/10</span>
           <span id="home-stamina-timer" style="font-size:10px;color:#aaa;margin-left:2px"></span>
         </div>
-      </div>
-
-      <!-- 每日签到入口 -->
-      <div style="padding:6px 12px 0">
-        <button onclick="window.signinModule?.showSignin()" style="width:100%;height:40px;border:none;border-radius:12px;background:linear-gradient(135deg,#f5a623,#e8850a);color:#fff;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(245,166,35,0.35);position:relative">
-          🗓️ 每日签到
-          <span id="signin-reddot" style="display:none;position:absolute;top:6px;right:10px;width:8px;height:8px;background:#ef5350;border-radius:50%;border:1.5px solid #fff"></span>
-        </button>
+        <div class="stat-pill" id="signin-pill" title="每日签到" onclick="window.signinModule?.showSignin()" style="cursor:pointer;position:relative;background:linear-gradient(135deg,#f5a623,#e8850a);border:none">
+          <span class="stat-pill-icon">🗓️</span>
+          <span class="stat-pill-value" style="color:#fff;font-weight:700">签到</span>
+          <span id="signin-reddot" style="display:none;position:absolute;top:2px;right:2px;width:7px;height:7px;background:#ef5350;border-radius:50%;border:1.5px solid #fff"></span>
+        </div>
       </div>
 
       <!-- 功能入口：大卡片按钮 -->
@@ -375,6 +372,6 @@
     </nav>
   </div>
 
-  <script type="module" src="js/app.js?v=49"></script>
+  <script type="module" src="js/app.js?v=50"></script>
 </body>
 </html>
