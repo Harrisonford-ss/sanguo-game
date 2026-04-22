@@ -1,4 +1,4 @@
-// 三国志探险 - 乱世探险（无限层Roguelike）
+// 三国志探险 - 乱世探险（无限层Roguelike）v46
 // 探险内等级系统 + 每层BOSS + 宝箱陷阱合并为?格
 // 无上限：层数越深难度越高，奖励也越丰厚，死亡才结算
 
@@ -32,14 +32,14 @@ const PASSIVES = {
   jiaxu:      { name:'毒士算计', icon:'☠️', desc:'每次战斗胜利额外+8金币',          type:'post_win_coin',      value:8    },
   jiangwei:   { name:'北伐之志', icon:'🔱', desc:'HP低于50%时攻击+25%',             type:'berserk',            value:0.25 },
   sunce:      { name:'小霸王威', icon:'🦁', desc:'每轮25%概率连击（额外造成一次伤害）', type:'double_strike',  value:0.25 },
+  xiahoudun:  { name:'拔矢啖睛', icon:'👁️', desc:'HP低于50%时攻击+30%',             type:'berserk',            value:0.30 },
   diaochan:   { name:'美人计',   icon:'💃', desc:'战前20%概率令BOSS跳过首轮攻击',   type:'boss_charm',         value:0.20 },
   yuanshao:   { name:'袁氏底蕴', icon:'💎', desc:'每场战斗开始临时HP+15%',          type:'battle_hp_bonus',    value:0.15 },
   dongzhuo:   { name:'横征暴敛', icon:'💰', desc:'每层开始获得5金币',               type:'floor_gold',         value:5    },
 };
 
 function getPassive() {
-  const ch = heroId ? characters.find(c => c.id === heroId) : null;
-  if (!ch || ch.rarity === 'common') return null;
+  if (!heroId) return null;
   return PASSIVES[heroId] || null;
 }
 
