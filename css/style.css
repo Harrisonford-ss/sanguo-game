@@ -4043,7 +4043,7 @@ body {
 
 .dg-lobby-hero {
   position: relative;
-  padding: 24px 20px 18px;
+  padding: 28px 20px 22px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   overflow: hidden;
   text-align: center;
@@ -4052,8 +4052,28 @@ body {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 50% 120%, rgba(255,255,255,0.12) 0%, transparent 65%);
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255,200,100,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 50%, rgba(100,150,255,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 60%);
   pointer-events: none;
+}
+.dg-lobby-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background:
+    url('../images/cardart/lvbu.webp') -10px bottom / 80px auto no-repeat,
+    url('../images/cardart/zhaoyun.webp') 55px bottom / 72px auto no-repeat,
+    url('../images/cardart/guanyu.webp') right -10px bottom / 78px auto no-repeat,
+    url('../images/cardart/zhouyu.webp') right 62px bottom / 68px auto no-repeat;
+  opacity: 0.22;
+  pointer-events: none;
+  mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%);
 }
 .dg-lobby-title {
   font-size: 24px;
