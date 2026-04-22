@@ -2,7 +2,7 @@
 // 探险内等级系统 + 每层BOSS + 宝箱陷阱合并为?格
 // 无上限：层数越深难度越高，奖励也越丰厚，死亡才结算
 
-import { gameState } from './state.js';
+import { gameState, calcCharPower } from './state.js';
 import { characters, getCharacter } from '../data/characters.js';
 import { quizzes } from '../data/quizzes.js';
 import { avatarHTML } from './avatars.js';
@@ -218,9 +218,7 @@ function renderLobby() {
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px">
       ${owned
         .map(id => {
-          // 用实际战斗属性计算综合战力（含稀有度和等级加成）
-          const s = calcStats(id);
-          const power = s ? (s.atk + s.int + s.def + Math.round(s.maxHp / 10)) : 0;
+          const power = calcCharPower(id, gameState.getCardLevel(id));
           return { id, power };
         })
         .sort((a,b) => b.power - a.power)
