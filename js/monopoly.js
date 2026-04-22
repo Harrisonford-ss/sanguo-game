@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v38
+// 三国志探险 - 三国大富翁（三方势力版）v39
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -210,7 +210,7 @@ function showStartScreen() {
 
       <!-- 规则卡片 -->
       <div style="margin:0 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,224,130,0.2);border-radius:14px;padding:14px;flex-shrink:0">
-        <div style="font-size:11px;font-weight:700;color:rgba(255,224,130,0.7);letter-spacing:1px;margin-bottom:10px">📖 游戏规则</div>
+        <div style="font-size:13px;font-weight:700;color:rgba(255,224,130,0.85);letter-spacing:1px;margin-bottom:10px">📖 游戏规则</div>
         <div style="display:flex;flex-direction:column;gap:7px">
           <div style="display:flex;align-items:flex-start;gap:8px">
             <span style="font-size:14px;flex-shrink:0;margin-top:1px">🎲</span>
@@ -228,9 +228,9 @@ function showStartScreen() {
             <span style="font-size:14px;flex-shrink:0;margin-top:1px">💰</span>
             <span style="font-size:11.5px;color:rgba(255,255,255,0.75);line-height:1.5">落在己城自动收税，升级城池提升税收</span>
           </div>
-          <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:rgba(255,224,130,0.08);border-radius:8px;border-left:2px solid rgba(255,224,130,0.4)">
+          <div style="display:flex;align-items:flex-start;gap:8px">
             <span style="font-size:14px;flex-shrink:0;margin-top:1px">📊</span>
-            <span style="font-size:11.5px;color:#ffe082;line-height:1.5">获胜时所有资产折算为积分上榜</span>
+            <span style="font-size:11.5px;color:rgba(255,255,255,0.75);line-height:1.5">结算时所有资产均可折算为积分</span>
           </div>
         </div>
       </div>
