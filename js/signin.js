@@ -51,6 +51,7 @@ function updateRedDot() {
 export function checkRedDot() { updateRedDot(); }
 
 export function showSignin() {
+  try {
   const canSign = gameState.canSignToday();
   const currentDay = gameState.signDay; // 上次签到是第几天，0=未开始
 
@@ -126,6 +127,7 @@ export function showSignin() {
       showRewardPopup(day, reward.icon, got);
     });
   }
+  } catch(e) { alert('签到错误: ' + e.message); console.error('[signin]', e); }
 }
 
 function showRewardPopup(day, icon, desc) {
