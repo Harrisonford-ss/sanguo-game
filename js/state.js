@@ -11,8 +11,9 @@ export function calcCharPower(charId, level = 1) {
   const char = characters.find(c => c.id === charId);
   if (!char) return 0;
   const base = RARITY_BASE[char.rarity] || 60;
-  // 每级+20%，全整数运算，结果永远固定
-  return base + (level - 1) * Math.floor(base * 0.2);
+  const statSum = Object.values(char.stats || {}).reduce((s, v) => s + v, 0);
+  const growth = Math.floor(base * 0.2);
+  return base + statSum + (level - 1) * growth;
 }
 
 const STORAGE_KEY = 'sanguo-game-v3';
