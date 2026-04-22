@@ -59,6 +59,8 @@ const defaultState = {
   monopolyWins: 0,
   dungeonRuns: 0,
   dungeonMaxFloor: 0,
+  monopolyScore: 0,
+  monopolyWins: 0,
   quizPerfectCount: 0,
   consecutiveWins: 0,
   maxConsecutiveWins: 0,
@@ -445,6 +447,16 @@ class GameState {
     this.save();
     this.emit('stats-changed');
   }
+
+  recordMonopolySettle(score, won = false) {
+    this.data.monopolyScore = (this.data.monopolyScore || 0) + score;
+    if (won) this.data.monopolyWins = (this.data.monopolyWins || 0) + 1;
+    this.save();
+    this.emit('stats-changed');
+  }
+
+  get monopolyScore() { return this.data.monopolyScore || 0; }
+  get monopolyWins()  { return this.data.monopolyWins  || 0; }
 
   recordTenPull() {
     this.data.tenPullCount = (this.data.tenPullCount || 0) + 1;

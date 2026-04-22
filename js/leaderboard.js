@@ -1,13 +1,13 @@
 // 三国志探险 - 排行榜 + 擂台
 
-import { getLeaderboard, getFloorLeaderboard, getArenaOpponents, getMyArenaTeam, setArenaTeam, recordArenaResult, getArenaLog, isLoggedIn, getUser } from './supabase.js';
+import { getLeaderboard, getFloorLeaderboard, getMonopolyLeaderboard, getArenaOpponents, getMyArenaTeam, setArenaTeam, recordArenaResult, getArenaLog, isLoggedIn, getUser } from './supabase.js';
 import { gameState } from './state.js';
 import { getCharacter } from '../data/characters.js';
 import { avatarHTML } from './avatars.js';
 import { calcStats } from './battle.js';
 
 let currentTab = 'rank'; // 'rank' | 'arena' | 'log'
-let rankSubTab = 'power'; // 'power' | 'floor'
+let rankSubTab = 'power'; // 'power' | 'floor' | 'monopoly'
 
 export function initLeaderboard() {
   window.lbModule = { refresh };
@@ -46,53 +46,55 @@ async function refresh() {
 
 // ===== 排行榜 =====
 async function renderRank(el) {
-  const isPower = rankSubTab === 'power';
+  const tab = rankSubTab;
 
-  // 二级切换
+  const btnStyle = (active, color) => `
+    flex:1;padding:8px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;
+    background:${active ? `linear-gradient(135deg,${color})` : 'var(--bg-card)'};
+    color:${active ? 'white' : 'var(--text-light)'};
+    box-shadow:${active ? `0 3px 10px rgba(0,0,0,0.2)` : 'var(--shadow)'};`;
+
   el.innerHTML = `
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <button onclick="window.lbModule._rankSub('power')" style="
-        flex:1;padding:8px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
-        background:${isPower ? 'linear-gradient(135deg,#f5a623,#ff9800)' : 'var(--bg-card)'};
-        color:${isPower ? 'white' : 'var(--text-light)'};
-        box-shadow:${isPower ? '0 3px 10px rgba(245,166,35,0.35)' : 'var(--shadow)'}">
-        ⚔️ 战力榜
-      </button>
-      <button onclick="window.lbModule._rankSub('floor')" style="
-        flex:1;padding:8px;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
-        background:${!isPower ? 'linear-gradient(135deg,#4caf50,#388e3c)' : 'var(--bg-card)'};
-        color:${!isPower ? 'white' : 'var(--text-light)'};
-        box-shadow:${!isPower ? '0 3px 10px rgba(76,175,80,0.35)' : 'var(--shadow)'}">
-        🗺️ 探险榜
-      </button>
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button onclick="window.lbModule._rankSub('power')" style="${btnStyle(tab==='power','#f5a623,#ff9800')}">⚔️ 战力榜</button>
+      <button onclick="window.lbModule._rankSub('floor')" style="${btnStyle(tab==='floor','#4caf50,#388e3c')}">🗺️ 探险榜</button>
+      <button onclick="window.lbModule._rankSub('monopoly')" style="${btnStyle(tab==='monopoly','#667eea,#764ba2')}">🎲 大富翁</button>
     </div>
     <div id="rank-list"><div style="text-align:center;color:var(--text-light);padding:20px">加载中...</div></div>`;
 
   try {
-    const list = isPower ? await getLeaderboard(30) : await getFloorLeaderboard(30);
+    let list;
+    if (tab === 'power')    list = await getLeaderboard(30);
+    else if (tab === 'floor') list = await getFloorLeaderboard(30);
+    else                    list = await getMonopolyLeaderboard(30);
+
     const me = getUser();
     const listEl = document.getElementById('rank-list');
     if (!listEl) return;
 
-    const filtered = isPower ? list : list.filter(r => r.dungeon_floor > 0);
-
-    if (filtered.length === 0) {
-      listEl.innerHTML = `<div style="text-align:center;color:var(--text-light);padding:20px">
-        ${isPower ? '暂无战力数据，多多游戏提升战力吧！' : '暂无探险记录，快去探险创造纪录吧！'}
-      </div>`;
+    if (list.length === 0) {
+      const tips = { power: '暂无战力数据，多多游戏提升战力吧！', floor: '暂无探险记录，快去探险创造纪录吧！', monopoly: '暂无大富翁记录，去结算一局吧！' };
+      listEl.innerHTML = `<div style="text-align:center;color:var(--text-light);padding:20px">${tips[tab]}</div>`;
       return;
     }
 
-    listEl.innerHTML = filtered.map((row, i) => {
+    const valueColor = tab === 'power' ? '#f5a623' : tab === 'floor' ? '#4caf50' : '#667eea';
+
+    listEl.innerHTML = list.map((row, i) => {
       const isMe = row.user_id === me?.id;
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `<span style="font-size:12px">${i+1}</span>`;
 
-      const valueColor = isPower ? '#f5a623' : '#4caf50';
-      const value = isPower ? (row.power || 0) : (row.dungeon_floor || 0);
-      const unit = isPower ? '战力' : '层';
-      const sub = isPower
-        ? `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`
-        : `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`;
+      let value, unit, sub;
+      if (tab === 'power') {
+        value = row.power || 0; unit = '战力';
+        sub = `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`;
+      } else if (tab === 'floor') {
+        value = row.dungeon_floor || 0; unit = '层';
+        sub = `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`;
+      } else {
+        value = row.monopoly_score || 0; unit = '积分';
+        sub = `🏆${row.monopoly_wins||0}局胜利`;
+      }
 
       return `<div style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:10px;margin-bottom:5px;
         ${isMe

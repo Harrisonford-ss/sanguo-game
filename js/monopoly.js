@@ -211,11 +211,19 @@ function settle() {
   if (!active) return;
   const earned = P.coins;
   if (earned > 0) gameState.addGold(earned);
+
+  // 积分：金币 + 城池×10（算法待后续完善）
+  const score = earned + P.cities.length * 10;
+  const won = P.cities.length >= AI.cities.length && P.cities.length >= SQ.cities.length;
+  gameState.recordMonopolySettle(score, won);
+  if (window.authModule?.syncToCloud) window.authModule.syncToCloud().catch(() => {});
+
   clearSave();
   popup(`<div style="font-size:40px">💰</div>
     <h3 style="margin:6px 0">结算成功！</h3>
     <p style="font-size:22px;font-weight:700;color:#f5a623">+${earned} 金币</p>
-    <p style="font-size:11px;color:#999;margin:4px 0 12px">已存入游戏账户</p>
+    <p style="font-size:13px;color:#667eea;font-weight:700;margin:4px 0">+${score} 大富翁积分</p>
+    <p style="font-size:11px;color:#999;margin:4px 0 12px">城池 ${P.cities.length} 座 · 积分已上榜</p>
     <button class="btn btn-primary" style="width:100%" onclick="window._mc()">开始新局</button>`);
   window._mc = () => { closePopup(); active = false; startGame(); };
 }

@@ -173,6 +173,24 @@ export async function getFloorLeaderboard(limit = 30) {
     .slice(0, limit);
 }
 
+export async function getMonopolyLeaderboard(limit = 30) {
+  const [saves, lb] = await Promise.all([
+    query('sanguo_saves', `select=user_id,game_data&limit=200`),
+    query('sanguo_leaderboard', `select=user_id,nickname,avatar,card_count,win_count&limit=200`)
+  ]);
+  const lbMap = Object.fromEntries(lb.map(r => [r.user_id, r]));
+  return saves
+    .map(s => {
+      const score = s.game_data?.monopolyScore || 0;
+      const wins  = s.game_data?.monopolyWins  || 0;
+      const info  = lbMap[s.user_id] || {};
+      return { user_id: s.user_id, monopoly_score: score, monopoly_wins: wins, ...info };
+    })
+    .filter(r => r.monopoly_score > 0)
+    .sort((a, b) => b.monopoly_score - a.monopoly_score)
+    .slice(0, limit);
+}
+
 // ===== 擂台 =====
 export async function setArenaTeam(team, power) {
   if (!currentUser) return;
