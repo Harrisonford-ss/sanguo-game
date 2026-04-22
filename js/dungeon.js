@@ -188,7 +188,7 @@ function getInt() { return Math.round(heroBase.int * (1 + (dgLv - 1) * 0.10)); }
 // ===== 大厅 =====
 function renderLobby() {
   const c = el('dungeon-container'); if (!c) return;
-  c.style.background = '#0d0f1c';
+  c.style.background = 'var(--bg)';
   const owned = Object.keys(gameState.ownedCards);
   const milestone = sweepMilestone();
   const best = getBestFloor();
@@ -482,7 +482,7 @@ function revealAround(x,y) {
 // ===== 主渲染 =====
 function render() {
   const c = el('dungeon-container'); if (!c) return;
-  c.style.background = '#0a0a15';
+  c.style.background = 'var(--bg)';
   const hpPct  = Math.max(0, hp / maxHp * 100);
   const hpFillClass = hpPct > 50 ? 'high' : hpPct > 25 ? 'mid' : '';
   const expPct = Math.min(100, dgExp / dgExpNext * 100);
