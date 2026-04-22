@@ -3673,21 +3673,38 @@ body {
 /* ── Banner ── */
 .gw-banner {
   position: relative;
-  min-height: 220px;
+  min-height: 240px;
   display: flex;
   align-items: flex-end;
   overflow: hidden;
   flex-shrink: 0;
+  background: url('../images/cardart/lvbu.webp') center 15% / cover no-repeat;
+}
+
+.gw-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5,3,18,0.35) 0%,
+    rgba(5,3,18,0.2) 30%,
+    rgba(5,3,18,0.55) 65%,
+    rgba(5,3,18,0.92) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 
 .gw-banner-aurora {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background:
-    radial-gradient(ellipse 100% 80% at 20% 30%, rgba(124,77,255,0.35) 0%, transparent 60%),
-    radial-gradient(ellipse 80% 70% at 80% 20%, rgba(255,215,0,0.18) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(92,107,192,0.2) 0%, transparent 60%);
+    radial-gradient(ellipse 100% 80% at 20% 30%, rgba(124,77,255,0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(92,107,192,0.15) 0%, transparent 60%);
   animation: gwAurora 8s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
 @keyframes gwAurora {
@@ -3699,12 +3716,12 @@ body {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: 3;
 }
 
 .gw-banner-body {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   padding: 0 20px 28px;
   width: 100%;
 }
@@ -3745,7 +3762,7 @@ body {
 .gw-coins-badge {
   position: absolute;
   top: 16px; right: 16px;
-  z-index: 3;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 5px;
