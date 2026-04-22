@@ -188,83 +188,76 @@ function getInt() { return Math.round(heroBase.int * (1 + (dgLv - 1) * 0.10)); }
 // ===== 大厅 =====
 function renderLobby() {
   const c = el('dungeon-container'); if (!c) return;
+  c.style.background = '#0d0f1c';
   const owned = Object.keys(gameState.ownedCards);
+  const milestone = sweepMilestone();
+  const best = getBestFloor();
+  const cnt = getDailyCount();
+  const remaining = Math.max(0, DAILY_FREE - cnt);
+  const canAfford = gameState.quizCoins >= 1;
 
-  c.innerHTML = `<div style="padding:16px">
-    <div style="text-align:center;padding:24px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:16px;margin-bottom:14px;color:white">
-      <div style="font-size:32px;margin-bottom:6px">🗺️</div>
-      <h3 style="font-size:20px;margin-bottom:4px">乱世探险</h3>
-      <p style="font-size:12px;opacity:0.7">无限层 · 刷怪升级 · 击败BOSS</p>
-    </div>
-    <div style="background:var(--bg-card);border-radius:12px;padding:10px;margin-bottom:12px;box-shadow:var(--shadow);font-size:12px;line-height:1.8;color:var(--text-light)">
-      · 选一名武将深入无限层地牢<br>
-      · 所有格子都是暗格，踏上去才知道遇到什么<br>
-      · 可能遭遇战斗、答题、宝箱、陷阱、商人……<br>
-      · 每层有👹BOSS，击败才能进入下一层<br>
-      · 每通过5层解锁扫荡，下次可直接跳过已通关卡
-    </div>
-    ${(()=>{
-      const milestone = sweepMilestone();
-      const best = getBestFloor();
-      if (milestone < 5) return `<div style="background:#f5f5f5;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#999;text-align:center">🔒 通过第5层后解锁扫荡功能（当前最深：第${best||0}层）</div>`;
-      return `<div style="background:linear-gradient(135deg,#fff8e1,#fffde7);border:1.5px solid #f5a623;border-radius:12px;padding:10px 14px;margin-bottom:12px">
-        <div style="font-size:13px;font-weight:700;color:#e65100;margin-bottom:4px">⚡ 扫荡可用</div>
-        <div style="font-size:12px;color:#795548;margin-bottom:8px">历史最深第 <b>${best}</b> 层，可扫荡前 <b>${milestone}</b> 层，直接从第 <b>${milestone+1}</b> 层出发</div>
-        <button class="btn btn-primary" style="width:100%;background:linear-gradient(135deg,#f5a623,#e65100);font-size:13px"
-          ${heroId?'':'disabled'} onclick="window.dungeonModule.startSweep()">${heroId?`⚡ 扫荡前${milestone}层并出发`:'请先选择武将'}</button>
+  const sweepSection = milestone < 5
+    ? `<div class="dg-sweep-locked">🔒 通过第5层后解锁扫荡（当前最深：第${best||0}层）</div>`
+    : `<div class="dg-sweep-card">
+        <div class="dg-sweep-title">⚡ 扫荡可用</div>
+        <div class="dg-sweep-desc">历史最深第 ${best} 层，可扫荡前 ${milestone} 层，直接从第 ${milestone+1} 层出发</div>
+        <button class="dg-sweep-btn" ${heroId?'':'disabled'} onclick="window.dungeonModule.startSweep()">
+          ${heroId?`⚡ 扫荡前${milestone}层并出发`:'请先选择武将'}
+        </button>
       </div>`;
-    })()}
-    <div style="font-size:13px;font-weight:700;margin-bottom:8px">选择武将（按战力排序）</div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px">
-      ${owned
-        .map(id => {
-          const power = calcCharPower(id, gameState.getCardLevel(id));
-          return { id, power };
-        })
-        .sort((a,b) => b.power - a.power)
-        .map(({id}) => {
-        const ch = getCharacter(id); if (!ch) return '';
-        const lv = gameState.getCardLevel(id), sel = heroId===id;
-        const rb = ch.rarity==='legend'?'#ffd700':ch.rarity==='rare'?'#7c4dff':'#bbb';
-        const pas = PASSIVES[id];
-        return `<div style="text-align:center;padding:4px;border-radius:8px;cursor:pointer;
-          border:2px solid ${sel?'#4caf50':rb};background:${sel?'#4caf5010':'#fff'};transition:all 0.15s"
-          onclick="window.dungeonModule._pick('${id}')">
-          <div style="display:flex;align-items:center;justify-content:center;padding:3px 0">
-            ${avatarHTML(id,48)}
-          </div>
-          <div style="font-size:10px;font-weight:700">${ch.name}</div>
-          <div style="font-size:9px;color:${rb};font-weight:600">Lv${lv}</div>
-          ${pas ? `<div style="font-size:8px;color:#555;background:${rb}22;border-radius:4px;padding:1px 3px;margin-top:1px;line-height:1.2">${pas.icon}${pas.name}</div>` : ''}
-        </div>`;
-      }).join('')}
+
+  const charCards = owned
+    .map(id => ({ id, power: calcCharPower(id, gameState.getCardLevel(id)) }))
+    .sort((a, b) => b.power - a.power)
+    .map(({ id }) => {
+      const ch = getCharacter(id); if (!ch) return '';
+      const lv = gameState.getCardLevel(id), sel = heroId === id;
+      const rb = ch.rarity==='legend'?'#ffd700':ch.rarity==='rare'?'#7c4dff':'#aaa';
+      const pas = PASSIVES[id];
+      return `<div class="dg-char-item ${sel?'selected':''}" style="border-color:${sel?'#4caf50':rb}"
+        onclick="window.dungeonModule._pick('${id}')">
+        ${avatarHTML(id, 44)}
+        <div class="dg-char-name">${ch.name}</div>
+        <div class="dg-char-lv" style="color:${rb}">Lv${lv}</div>
+        ${pas ? `<div class="dg-char-passive">${pas.icon}${pas.name}</div>` : ''}
+      </div>`;
+    }).join('');
+
+  const passiveBanner = heroId && PASSIVES[heroId] ? `
+    <div class="dg-passive-banner">
+      <span style="font-size:15px">${PASSIVES[heroId].icon}</span>
+      <b> 被动·${PASSIVES[heroId].name}</b>：${PASSIVES[heroId].desc}
+    </div>` : '';
+
+  const quotaSection = remaining > 0
+    ? `<div class="dg-quota">今日免费次数：<b style="color:#66bb6a">${remaining}</b> / ${DAILY_FREE} 次剩余</div>`
+    : `<div class="dg-quota-warn">今日免费次数已用完 · 继续需消耗 <b style="color:#ffb74d">1 🎫答题积分</b>
+        <span style="color:${canAfford?'#66bb6a':'#ef5350'}">（当前：${gameState.quizCoins}）</span>
+      </div>`;
+
+  const canStart = heroId && (cnt < DAILY_FREE || canAfford);
+  const btnLabel = !heroId ? '请选择武将' : cnt < DAILY_FREE ? '⚔️ 出发探险（免费）' : '⚔️ 出发探险（-1🎫）';
+
+  c.innerHTML = `<div class="dg-lobby">
+    <div class="dg-lobby-hero">
+      <div class="dg-lobby-icon">🗺️</div>
+      <div class="dg-lobby-title">乱世探险</div>
+      <div class="dg-lobby-sub">无限层 · 刷怪升级 · 击败BOSS</div>
     </div>
-    ${heroId && PASSIVES[heroId] ? `
-    <div style="background:linear-gradient(135deg,#ede7f6,#f3e5f5);border:1.5px solid #7c4dff;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:12px">
-      <span style="font-size:14px">${PASSIVES[heroId].icon}</span>
-      <b style="color:#7c4dff"> 被动·${PASSIVES[heroId].name}</b>
-      <span style="color:#555">：${PASSIVES[heroId].desc}</span>
-    </div>` : ''}
-    ${(()=>{
-      const cnt = getDailyCount();
-      const remaining = Math.max(0, DAILY_FREE - cnt);
-      const needPay = cnt >= DAILY_FREE;
-      const canAfford = gameState.quizCoins >= 1;
-      if (remaining > 0) {
-        return `<div style="text-align:center;font-size:12px;color:#555;margin-bottom:8px">
-          今日免费次数：<b style="color:#4caf50">${remaining}</b> / ${DAILY_FREE} 次剩余
-        </div>`;
-      } else {
-        return `<div style="text-align:center;font-size:12px;margin-bottom:8px;padding:6px;background:#fff8e1;border-radius:8px;border:1px solid #ffe082">
-          今日免费次数已用完 · 继续需消耗 <b style="color:#e65100">1 🎫答题积分</b>
-          <span style="color:${canAfford?'#4caf50':'#ef5350'}">（当前：${gameState.quizCoins}）</span>
-        </div>`;
-      }
-    })()}
-    <button class="btn btn-primary" style="width:100%;font-size:16px;padding:14px"
-      ${heroId && (getDailyCount() < DAILY_FREE || gameState.quizCoins >= 1) ? '' : 'disabled'}
-      onclick="window.dungeonModule.startDungeon()">
-      ${!heroId ? '请选择武将' : getDailyCount() < DAILY_FREE ? '⚔️ 出发探险（免费）' : '⚔️ 出发探险（-1🎫）'}
+    <div class="dg-rules-card">
+      <p>· 选一名武将深入无限层地牢<br>
+         · 所有格子都是暗格，踏上去才知道遇到什么<br>
+         · 可能遭遇战斗、答题、宝箱、陷阱、商人……<br>
+         · 每层有👹BOSS，击败才能进入下一层<br>
+         · 每通过5层解锁扫荡，下次可直接跳过已通关卡</p>
+    </div>
+    ${sweepSection}
+    <div class="dg-section-title">选择武将 · 按战力排序</div>
+    <div class="dg-char-grid">${charCards}</div>
+    ${passiveBanner}
+    ${quotaSection}
+    <button class="dg-start-btn" ${canStart?'':'disabled'} onclick="window.dungeonModule.startDungeon()">
+      ${btnLabel}
     </button>
   </div>`;
   window.dungeonModule._pick = id => { heroId = id; renderLobby(); };
@@ -489,82 +482,60 @@ function revealAround(x,y) {
 // ===== 主渲染 =====
 function render() {
   const c = el('dungeon-container'); if (!c) return;
+  c.style.background = '#0a0a15';
   const hpPct  = Math.max(0, hp / maxHp * 100);
-  const hpC    = hpPct > 50 ? '#4caf50' : hpPct > 25 ? '#ff9800' : '#ef5350';
+  const hpFillClass = hpPct > 50 ? 'high' : hpPct > 25 ? 'mid' : '';
   const expPct = Math.min(100, dgExp / dgExpNext * 100);
   const pas    = getPassive();
 
+  const chips = (equip.weapon || equip.armor || buffs.length) ? `
+    <div class="dg-chips">
+      ${equip.weapon ? `<span class="dg-chip weapon">${equip.weapon.icon} ${equip.weapon.name} +${equip.weapon.atk}</span>` : ''}
+      ${equip.armor  ? `<span class="dg-chip armor">${equip.armor.icon} ${equip.armor.name} +${equip.armor.def}</span>` : ''}
+      ${buffs.map(b => `<span class="dg-chip buff" title="${b.n}">${b.i} ${b.n}</span>`).join('')}
+    </div>` : '';
+
+  const logLines = logs.length === 0
+    ? `<div class="dg-log-empty">踏上格子开始探险…</div>`
+    : logs.slice(-3).map(m => `<div class="dg-log-line">${m}</div>`).join('');
+
   c.innerHTML = `
-  <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:10px 12px 8px">
-
-    <!-- 顶栏：头像 + 名字层数 + 金币 -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      ${avatarHTML(heroId, 36)}
-      <div style="flex:1;min-width:0">
+  <div class="dg-hud">
+    <div class="dg-hud-top">
+      ${avatarHTML(heroId, 38)}
+      <div class="dg-hud-info">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
-          <span style="font-size:14px;font-weight:800;color:#fff">${heroBase.name}</span>
-          <span style="font-size:11px;color:#ffc107;font-weight:700">第 ${floor} 层</span>
+          <span class="dg-hud-name">${heroBase.name}</span>
+          <span class="dg-hud-floor">第 ${floor} 层</span>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:1px">
-          探险 Lv${dgLv} &nbsp;·&nbsp; 💰 ${coins} 金币
-          ${pas ? `&nbsp;·&nbsp; <span style="color:#ce93d8">${pas.icon}${pas.name}</span>` : ''}
+        <div class="dg-hud-meta">
+          探险 Lv${dgLv} · 💰 ${coins}
+          ${pas ? `· <span style="color:#ce93d8">${pas.icon}${pas.name}</span>` : ''}
         </div>
       </div>
     </div>
-
-    <!-- HP 条 -->
-    <div style="margin-bottom:5px">
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.6);margin-bottom:2px">
-        <span style="color:${hpC};font-weight:700">❤️ HP</span>
-        <span>${hp} / ${maxHp}</span>
-      </div>
-      <div style="height:8px;background:rgba(255,255,255,0.12);border-radius:4px;overflow:hidden">
-        <div style="width:${hpPct}%;height:100%;background:linear-gradient(90deg,${hpC},${hpC}bb);border-radius:4px;transition:width 0.4s"></div>
-      </div>
+    <div class="dg-bar-row"><span style="color:#66bb6a">❤️ HP</span><span>${hp} / ${maxHp}</span></div>
+    <div class="dg-bar-track">
+      <div class="dg-bar-fill hp ${hpFillClass}" style="width:${hpPct}%"></div>
     </div>
-
-    <!-- EXP 条 -->
-    <div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.6);margin-bottom:2px">
-        <span style="color:#64b5f6;font-weight:700">✨ EXP</span>
-        <span>${dgExp} / ${dgExpNext}</span>
-      </div>
-      <div style="height:5px;background:rgba(255,255,255,0.12);border-radius:3px;overflow:hidden">
-        <div style="width:${expPct}%;height:100%;background:linear-gradient(90deg,#42a5f5,#1976d2);border-radius:3px;transition:width 0.4s"></div>
-      </div>
+    <div class="dg-bar-row"><span style="color:#64b5f6">✨ EXP</span><span>${dgExp} / ${dgExpNext}</span></div>
+    <div class="dg-bar-track dg-bar-exp">
+      <div class="dg-bar-fill exp" style="width:${expPct}%"></div>
     </div>
-
-    <!-- 装备 & Buff 标签 -->
-    ${equip.weapon || equip.armor || buffs.length ? `
-    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:7px">
-      ${equip.weapon ? `<span style="font-size:11px;background:rgba(255,152,0,0.2);border:1px solid rgba(255,152,0,0.4);border-radius:5px;padding:2px 6px;color:#ffcc80">${equip.weapon.icon} ${equip.weapon.name} +${equip.weapon.atk}</span>` : ''}
-      ${equip.armor  ? `<span style="font-size:11px;background:rgba(76,175,80,0.2);border:1px solid rgba(76,175,80,0.4);border-radius:5px;padding:2px 6px;color:#a5d6a7">${equip.armor.icon} ${equip.armor.name} +${equip.armor.def}</span>` : ''}
-      ${buffs.map(b => `<span style="font-size:12px;background:rgba(255,255,255,0.1);border-radius:5px;padding:2px 5px" title="${b.n}">${b.i}</span>`).join('')}
-    </div>` : ''}
+    ${chips}
   </div>
 
-  <!-- 地图 + 结算按钮 -->
-  <div style="display:flex;align-items:flex-start;background:#f0ebe3;padding:6px 6px 4px">
-    <div id="dg-map" style="flex:1"></div>
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 4px 0 6px;gap:6px;align-self:stretch">
-      <button onclick="window.dungeonModule._quit()"
-        style="writing-mode:vertical-rl;text-orientation:mixed;
-          padding:14px 8px;border:none;border-radius:10px;
-          background:linear-gradient(180deg,#ef5350,#b71c1c);
-          color:#fff;font-size:13px;font-weight:800;cursor:pointer;
-          box-shadow:0 3px 8px rgba(183,28,28,0.4);letter-spacing:2px;
-          white-space:nowrap;line-height:1.3">
-        结算 🏳️
-      </button>
+  <div class="dg-map-area">
+    <div class="dg-map-wrap">
+      <div id="dg-map"></div>
+      <div class="dg-map-hint">❓ 踏上格子才知道遇到什么</div>
+    </div>
+    <div class="dg-quit-col">
+      <button class="dg-quit-btn" onclick="window.dungeonModule._quit()">结算 🏳️</button>
     </div>
   </div>
 
-  <!-- 日志 -->
-  <div style="background:#fff;border-top:1px solid #e8e0d0;padding:6px 12px;min-height:44px">
-    ${logs.length === 0
-      ? `<div style="font-size:11px;color:#bbb;text-align:center;padding:4px 0">踏上格子开始探险…</div>`
-      : logs.slice(-3).map(m => `<div style="font-size:11px;color:#555;padding:2px 0;border-bottom:1px solid #f5f5f5">${m}</div>`).join('')}
-  </div>`;
+  <div class="dg-log">${logLines}</div>`;
 
   renderGrid();
 }
@@ -573,51 +544,33 @@ function renderGrid() {
   const m = el('dg-map'); if (!m) return;
   const sz = Math.min(Math.floor((Math.min(window.innerWidth,600)-70)/GRID), 72);
 
-  let h = `<div style="display:grid;grid-template-columns:repeat(${GRID},${sz}px);gap:2px;justify-content:center">`;
+  let h = `<div style="display:grid;grid-template-columns:repeat(${GRID},${sz}px);gap:3px;justify-content:center">`;
   for (let y=0;y<GRID;y++) for (let x=0;x<GRID;x++) {
     const fog=fogMap[y][x], tile=map[y][x], isP=playerPos.x===x&&playerPos.y===y;
     const adj=Math.abs(x-playerPos.x)+Math.abs(y-playerPos.y)===1;
     const t=TILES[tile]||TILES.empty;
+    const s=`width:${sz}px;height:${sz}px`;
 
     if (fog===FOG) {
-      h+=`<div style="width:${sz}px;height:${sz}px;border-radius:5px;background:#555;display:flex;align-items:center;justify-content:center;"></div>`;
+      h+=`<div class="dg-tile fog" style="${s}"></div>`;
     } else if (tile==='wall') {
-      // 树林：深绿色，不可通行
-      h+=`<div style="width:${sz}px;height:${sz}px;border-radius:4px;
-        background:linear-gradient(160deg,#2e7d32 0%,#1b5e20 50%,#33691e 100%);
-        border:1.5px solid #1a3d1a;
-        box-shadow:inset 0 2px 4px rgba(255,255,255,0.1),inset 0 -2px 4px rgba(0,0,0,0.3);
-        display:flex;align-items:center;justify-content:center;
-        font-size:${sz>50?20:15}px;line-height:1;flex-direction:column;gap:0px">
-        <span style="display:block;line-height:1">🌲</span>
-      </div>`;
+      h+=`<div class="dg-tile wall" style="${s};font-size:${sz>50?20:15}px">🌲</div>`;
     } else if (fog===VISIBLE && !isP) {
-      // 可见但未踩过：暗格，只显示问号，颜色不透露类型
-      const border=adj?'#ffc10788':'#ccc';
-      h+=`<div style="width:${sz}px;height:${sz}px;border-radius:5px;background:#c8bfaa;
-        border:2px solid ${border};display:flex;align-items:center;justify-content:center;
-        cursor:pointer;transition:all 0.15s"
-        onclick="window.dungeonModule._mv(${x},${y})">
-        <span style="font-size:${sz>50?16:13}px;color:#888;font-weight:700">?</span>
+      h+=`<div class="dg-tile dark ${adj?'adjacent':''}" style="${s};font-size:${sz>50?16:13}px"
+        ${adj?`onclick="window.dungeonModule._mv(${x},${y})"`:''}>
+        <span style="color:rgba(255,255,255,0.3);font-weight:700">?</span>
       </div>`;
     } else {
-      // EXPLORED 或玩家当前位置
-      const bg=`${t.color}${fog===EXPLORED?'88':''}`;
-      const border=isP?'#4caf50':adj?'#ffc10788':'#ddd';
-      const clickable = adj && !isP && tile!=='wall';
-      h+=`<div style="width:${sz}px;height:${sz}px;border-radius:5px;background:${bg};
-        border:2px solid ${border};display:flex;align-items:center;justify-content:center;
-        ${clickable?'cursor:pointer;':''}
-        ${isP?'box-shadow:0 0 6px rgba(76,175,80,0.4);':''}
-        transition:all 0.15s;position:relative"
-        ${clickable?`onclick="window.dungeonModule._mv(${x},${y})"`:''}>${
-        isP?avatarHTML(heroId,sz>50?32:24)
-        :`<span style="font-size:${sz>50?16:12}px;opacity:0.45">${t.icon}</span>`
-      }</div>`;
+      const explored = fog===EXPLORED && !isP;
+      h+=`<div class="dg-tile revealed ${isP?'player':''} ${adj&&!isP?'adjacent':''}"
+        style="${s};background:${t.color}${explored?'55':'99'}"
+        ${adj&&!isP&&tile!=='wall'?`onclick="window.dungeonModule._mv(${x},${y})"`:''}>
+        ${isP ? avatarHTML(heroId, sz>50?32:24)
+               : `<span style="font-size:${sz>50?18:13}px;opacity:${explored?0.4:0.8}">${t.icon}</span>`}
+      </div>`;
     }
   }
   h+='</div>';
-  h+=`<div style="text-align:center;margin-top:6px;font-size:10px;color:var(--text-light)">❓ 踏上去才知道是什么</div>`;
   m.innerHTML = h;
   window.dungeonModule._mv = moveTo;
 }
