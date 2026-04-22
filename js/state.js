@@ -455,7 +455,9 @@ class GameState {
   }
 
   recordMonopolySettle(score, won = false) {
-    this.data.monopolyScore = (this.data.monopolyScore || 0) + score;
+    if (score > (this.data.monopolyScore || 0)) {
+      this.data.monopolyScore = score;
+    }
     this.data.monopolyGames = (this.data.monopolyGames || 0) + 1;
     if (won) this.data.monopolyWins = (this.data.monopolyWins || 0) + 1;
     this.save();

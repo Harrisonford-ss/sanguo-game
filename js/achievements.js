@@ -202,7 +202,7 @@ export const ACHIEVEMENTS = [
     id: 'monopoly_score',
     name: '积分霸主', icon: '📊',
     stat: s => s.monopolyScore || 0,
-    statLabel: '积分',
+    statLabel: '单局最高积分',
     stages: [
       { label: '🥉 崭露头角', threshold: 1000,  reward: { gold: 50 } },
       { label: '🥈 名震一方', threshold: 3000, reward: { gold: 150 } },

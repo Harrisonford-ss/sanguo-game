@@ -1,4 +1,4 @@
-// 三国志探险 - 排行榜 + 擂台
+// 三国志探险 - 排行榜 + 擂台 v35
 
 import { getLeaderboard, getFloorLeaderboard, getMonopolyLeaderboard, getArenaOpponents, getMyArenaTeam, setArenaTeam, recordArenaResult, getArenaLog, isLoggedIn, getUser } from './supabase.js';
 import { gameState } from './state.js';
@@ -92,7 +92,7 @@ async function renderRank(el) {
         value = row.dungeon_floor || 0; unit = '层';
         sub = `🃏${row.card_count||0} &nbsp;⚔️${row.win_count||0}胜`;
       } else {
-        value = row.monopoly_score || 0; unit = '积分';
+        value = row.monopoly_score || 0; unit = '最高积分';
         sub = `🏆${row.monopoly_wins||0}局胜利`;
       }
 
