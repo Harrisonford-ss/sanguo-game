@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v45
+// 三国志探险 - 三国大富翁（三方势力版）v46
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -309,7 +309,7 @@ function clearSave() {
 function calcTotalAssets(p, cities) {
   let cityValue = 0;
   for (const cid of cities) {
-    const tile = TILES.find(t => t.id === cid);
+    const tile = BOARD.find(t => t.id === cid);
     if (!tile) continue;
     const lv = cityLevels[cid] || 1;
     cityValue += (tile.major ? TAX_MAJOR[lv] : TAX_MINOR[lv]) * 3;
