@@ -133,8 +133,9 @@ export async function saveGameToCloud(gameData, power) {
     power: power,
     updated_at: new Date().toISOString()
   });
-  // 同步排行榜
-  await patchOrInsert('sanguo_leaderboard', 'user_id', currentUser.id, {
+  // 同步排行榜（upsert 确保每个 user_id 只有一行）
+  await upsert('sanguo_leaderboard', {
+    user_id: currentUser.id,
     nickname: currentUser.nickname,
     avatar: currentUser.avatar || 'liubei',
     power: power,
@@ -205,7 +206,8 @@ export async function setArenaTeam(team, power) {
     updated_at: new Date().toISOString()
   });
   // 同时同步排行榜
-  await patchOrInsert('sanguo_leaderboard', 'user_id', currentUser.id, {
+  await upsert('sanguo_leaderboard', {
+    user_id: currentUser.id,
     nickname: currentUser.nickname,
     avatar: currentUser.avatar || 'liubei',
     power: power,
