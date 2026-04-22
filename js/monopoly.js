@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v43
+// 三国志探险 - 三国大富翁（三方势力版）v44
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -306,21 +306,21 @@ function clearSave() {
   localStorage.removeItem(SAVE_KEY);
 }
 
-function calcSettleScore() {
-  // 当前等级城池价值 = TAX[lv] * 3（与游戏内出售价格一致）
+function calcTotalAssets(p, cities) {
   let cityValue = 0;
-  for (const cid of P.cities) {
+  for (const cid of cities) {
     const tile = TILES.find(t => t.id === cid);
     if (!tile) continue;
     const lv = cityLevels[cid] || 1;
     cityValue += (tile.major ? TAX_MAJOR[lv] : TAX_MINOR[lv]) * 3;
   }
-  // 兵力：手中 + 各城驻兵，统一 1兵 = 2金
-  let totalTroops = P.troops;
-  for (const cid of P.cities) {
-    totalTroops += garrison[cid] || 0;
-  }
-  const totalAssets = P.coins + cityValue + totalTroops * 2;
+  let totalTroops = p.troops;
+  for (const cid of cities) totalTroops += garrison[cid] || 0;
+  return p.coins + cityValue + totalTroops * 2;
+}
+
+function calcSettleScore() {
+  const totalAssets = calcTotalAssets(P, P.cities);
   return Math.max(1, Math.floor(totalAssets / 10));
 }
 
@@ -329,14 +329,24 @@ function settle() {
   const won = P.cities.length >= AI.cities.length && P.cities.length >= SQ.cities.length;
   const earned = won ? P.coins : 0;
   if (earned > 0) gameState.addGold(earned);
-  // 获胜才计分
-  const score = won ? calcSettleScore() : 0;
+
+  // 积分：获胜才计分；若资产非全场第一则减半
+  let score = 0;
+  let halved = false;
+  if (won) {
+    const pAssets  = calcTotalAssets(P,  P.cities);
+    const aiAssets = calcTotalAssets(AI, AI.cities);
+    const sqAssets = calcTotalAssets(SQ, SQ.cities);
+    halved = pAssets < aiAssets || pAssets < sqAssets;
+    const raw = Math.max(1, Math.floor(pAssets / 10));
+    score = halved ? Math.max(1, Math.floor(raw / 2)) : raw;
+  }
   gameState.recordMonopolySettle(score, won);
   if (window.authModule?.syncToCloud) window.authModule.syncToCloud().catch(() => {});
 
   clearSave();
   const scoreLine = score > 0
-    ? `<p style="font-size:13px;color:#667eea;font-weight:700;margin:4px 0">+${score} 大富翁积分 · 已上榜</p>`
+    ? `<p style="font-size:13px;color:#667eea;font-weight:700;margin:4px 0">+${score} 大富翁积分 · 已上榜${halved ? '（资产非第一，积分减半）' : ''}</p>`
     : `<p style="font-size:11px;color:#aaa;margin:4px 0">失败，本局不计积分</p>`;
 
   popup(`<div style="font-size:40px">${won ? '🏆' : '💰'}</div>
