@@ -1424,8 +1424,8 @@ async function doAiLandEnemy(who, tile, defOwner) {
 
   // 估算胜率：攻方期望战力 vs 守方期望战力
   const balanceBonus = (def.cities.length - atk.cities.length >= 2) ? 2 : 0; // 落后时有平衡加成
-  const atkPower = 3.5 + atk.cities.length + Math.floor(atk.troops / 3) + balanceBonus;
-  const defPower = 3.5 + def.cities.length + Math.floor(cityGarrison / 5) + UPGRADE_DEF[lv];
+  const atkPower = 3.5 + Math.min(5, Math.floor(atk.cities.length / 3)) + Math.floor(atk.troops / 3) + balanceBonus;
+  const defPower = 3.5 + Math.min(5, Math.floor(def.cities.length / 3)) + Math.floor(cityGarrison / 5) + UPGRADE_DEF[lv];
 
   // 攻城条件：战力不低于对方70%（大幅落后才放弃）
   // 不用 canAffordRisk：不攻也要交税，攻城反而有机会得城
@@ -1600,7 +1600,7 @@ async function doAttack(who, tile) {
           <div style="font-size:22px">⚔️</div>
           <div style="text-align:left">
             <div style="font-weight:800;font-size:14px">${tile.name}</div>
-            <div style="font-size:10px;color:#888">${defLabel}守城 Lv${lv} · 守军+${def.cities.length+UPGRADE_DEF[lv]+Math.floor(getGarrison(tile.id)/5)}（驻兵${getGarrison(tile.id)}÷5） &nbsp;·&nbsp; 你的兵力+${Math.floor(atk.troops/4)}（${atk.troops}÷4）</div>
+            <div style="font-size:10px;color:#888">${defLabel}守城 Lv${lv} · 守军+${Math.min(5,Math.floor(def.cities.length/3))+UPGRADE_DEF[lv]+Math.floor(getGarrison(tile.id)/5)}（城池加成+驻兵） &nbsp;·&nbsp; 你的兵力+${Math.floor(atk.troops/4)}（${atk.troops}÷4）</div>
           </div>
         </div>
         <p style="font-size:11px;color:#666;margin:0 0 10px">选择进攻战术：</p>
@@ -1635,8 +1635,10 @@ async function doAttack(who, tile) {
   const cityGarrison = getGarrison(tile.id); // 城池驻兵加入守方战力
   const troopAtk = Math.floor(atk.troops / 4);   // 兵力折算：每4兵=+1攻击
   const troopDef = Math.floor(cityGarrison / 5);  // 驻兵折算：每5兵=+1守城
-  const ar = Math.floor(Math.random()*6)+1+atk.cities.length+troopAtk+atk.buff+atkAdv+balanceBonus - (atk.debuff||0);
-  const dr = Math.floor(Math.random()*6)+1+def.cities.length+troopDef+defLvBonus+defAdv;
+  const atkCityBonus = Math.min(5, Math.floor(atk.cities.length / 3));
+  const defCityBonus = Math.min(5, Math.floor(def.cities.length / 3));
+  const ar = Math.floor(Math.random()*6)+1+atkCityBonus+troopAtk+atk.buff+atkAdv+balanceBonus - (atk.debuff||0);
+  const dr = Math.floor(Math.random()*6)+1+defCityBonus+troopDef+defLvBonus+defAdv;
   atk.buff = 0; atk.debuff = 0;
   const win = atk.sureWin || ar > dr;
   if (atk.sureWin) { atk.sureWin = false; log(`⚡ 必胜发动！`); }
