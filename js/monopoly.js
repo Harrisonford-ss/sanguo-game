@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v42
+// 三国志探险 - 三国大富翁（三方势力版）v43
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -2084,7 +2084,9 @@ function endGame(forcedWinner, timeupWinner) {
   const unifyBonus = (pWin && forcedWinner === 'player') ? 100 : 0;
   const goldEarned = pWin ? P.coins + unifyBonus : 0;
   if (goldEarned > 0) gameState.addGold(goldEarned);
-  if (pWin) gameState.recordMonopolyWin();
+  const score = pWin ? calcSettleScore() : 0;
+  gameState.recordMonopolySettle(score, pWin);
+  if (window.authModule?.syncToCloud) window.authModule.syncToCloud().catch(() => {});
 
   const isBankrupt = forcedWinner === 'bankrupt';
   const isTimeUp   = forcedWinner === 'timeup';
@@ -2097,9 +2099,7 @@ function endGame(forcedWinner, timeupWinner) {
     ? '城池尽失，金币归零，大势已去。'
     : isTimeUp
       ? `${MAX_ROUNDS}回合终局，${scores[0].label}以 ${scores[0].cities} 座城池称雄！`
-      : allCity
-        ? (pWin ? `你占领了全部 ${TOTAL_CITIES} 座城池！` : `${scores[0].label}占领了全部城池`)
-        : '';
+      : '';
 
   popup(`
     <div style="font-size:40px;margin-bottom:4px">${resultIcon}</div>
@@ -2117,9 +2117,10 @@ function endGame(forcedWinner, timeupWinner) {
       ? `<div style="padding:12px;background:linear-gradient(135deg,#fff8e1,#fff3d4);border-radius:12px;margin-bottom:12px">
           <p style="font-size:20px;font-weight:700;color:#f5a623">💰 +${goldEarned} 金币</p>
           ${unifyBonus > 0 ? `<p style="font-size:11px;color:#e67e00;margin:4px 0 0">含统一天下奖励 +${unifyBonus}💰</p>` : ''}
+          <p style="font-size:13px;font-weight:700;color:#667eea;margin:6px 0 0">📊 +${score} 大富翁积分 · 已上榜</p>
         </div>`
       : `<div style="padding:12px;background:#f5f5f5;border-radius:12px;margin-bottom:12px">
-          <p style="font-size:14px;color:#999">💔 战败不获得金币</p>
+          <p style="font-size:14px;color:#999">💔 战败不获得金币及积分</p>
         </div>`}
     <button class="btn btn-primary" style="width:100%" onclick="window._mc()">返回</button>`);
 
