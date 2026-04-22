@@ -10,12 +10,9 @@ const RARITY_BASE = { legend: 200, rare: 120, common: 60 };
 export function calcCharPower(charId, level = 1) {
   const char = characters.find(c => c.id === charId);
   if (!char) return 0;
-  const base  = RARITY_BASE[char.rarity] || 60;
-  const stats = char.stats || {};
-  const avg   = (Object.values(stats).reduce((s, v) => s + v, 0) / Math.max(Object.keys(stats).length, 1));
-  const statBonus = Math.round(avg * 1.5);
-  const lvMult = 1 + 0.2 * (level - 1);   // Lv1=1.0 Lv3=1.4 Lv5=1.8
-  return Math.round((base + statBonus) * lvMult);
+  const base = RARITY_BASE[char.rarity] || 60;
+  // 每级+20%，全整数运算，结果永远固定
+  return base + (level - 1) * Math.floor(base * 0.2);
 }
 
 const STORAGE_KEY = 'sanguo-game-v3';
