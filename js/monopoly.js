@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v39
+// 三国志探险 - 三国大富翁（三方势力版）v40
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -326,10 +326,9 @@ function calcSettleScore() {
 
 function settle() {
   if (!active) return;
-  const earned = P.coins;
-  if (earned > 0) gameState.addGold(earned);
-
   const won = P.cities.length >= AI.cities.length && P.cities.length >= SQ.cities.length;
+  const earned = won ? P.coins : 0;
+  if (earned > 0) gameState.addGold(earned);
   // 获胜才计分
   const score = won ? calcSettleScore() : 0;
   gameState.recordMonopolySettle(score, won);
