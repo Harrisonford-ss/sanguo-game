@@ -1,4 +1,4 @@
-// 三国志探险 - 登录/注册/用户中心 UI
+// 三国志探险 - 登录/注册/用户中心 UI v45
 
 import { getUser, isLoggedIn, register, login, logout, saveGameToCloud, loadGameFromCloud } from './supabase.js';
 import { gameState, calcCharPower } from './state.js';
@@ -241,8 +241,6 @@ function calcPower() {
     const lv = cards[id].level || 1;
     power += calcCharPower(id, lv);
   }
-  power += gameState.totalStars * 20;
-  power += gameState.battleWins * 10;
   return power;
 }
 
