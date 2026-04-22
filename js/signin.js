@@ -80,7 +80,7 @@ export function showSignin() {
       <div style="font-size:20px">${r.icon}</div>
       <div style="font-size:9px;color:${isToday?'#fff':'#666'};margin-top:2px;line-height:1.3">${r.label}</div>
     </div>`;
-  }).join('');
+  });
 
   overlay.innerHTML = `
     <div style="background:#fff;border-radius:20px;width:100%;max-width:360px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.25)">
