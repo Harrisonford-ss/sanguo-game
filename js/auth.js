@@ -1,7 +1,7 @@
 // 三国志探险 - 登录/注册/用户中心 UI
 
 import { getUser, isLoggedIn, register, login, logout, saveGameToCloud, loadGameFromCloud } from './supabase.js';
-import { gameState } from './state.js';
+import { gameState, calcCharPower } from './state.js';
 import { avatarHTML } from './avatars.js';
 import { getCharacter, characters } from '../data/characters.js';
 
@@ -239,7 +239,7 @@ function calcPower() {
   const cards = gameState.ownedCards;
   for (const id in cards) {
     const lv = cards[id].level || 1;
-    power += lv * 100 + 50;
+    power += calcCharPower(id, lv);
   }
   power += gameState.totalStars * 20;
   power += gameState.battleWins * 10;

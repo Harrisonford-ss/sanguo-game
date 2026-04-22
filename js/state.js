@@ -3,6 +3,20 @@ import { characters } from '../data/characters.js';
 // 双货币系统：答题积分(quizCoins) + 抽卡积分(gachaCoins)
 // 对战胜利 → 答题积分 → 答题 → 抽卡积分 → 抽卡 → 更强 → 更难对战
 
+// ===== 单卡战力公式（统一） =====
+// 稀有度基础值 + 属性均值加成，再乘等级倍率
+const RARITY_BASE = { legend: 200, rare: 120, common: 60 };
+export function calcCharPower(charId, level = 1) {
+  const char = characters.find(c => c.id === charId);
+  if (!char) return 0;
+  const base  = RARITY_BASE[char.rarity] || 60;
+  const stats = char.stats || {};
+  const avg   = (Object.values(stats).reduce((s, v) => s + v, 0) / Math.max(Object.keys(stats).length, 1));
+  const statBonus = Math.round(avg * 1.5);
+  const lvMult = 1 + 0.2 * (level - 1);   // Lv1=1.0 Lv3=1.4 Lv5=1.8
+  return Math.round((base + statBonus) * lvMult);
+}
+
 const STORAGE_KEY = 'sanguo-game-v3';
 
 const defaultState = {
@@ -413,7 +427,7 @@ class GameState {
     let total = 0;
     for (const id of charIds) {
       const level = this.getCardLevel(id);
-      if (level > 0) total += level * 20 + 50;
+      if (level > 0) total += calcCharPower(id, level);
     }
     return total;
   }
