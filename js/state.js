@@ -370,12 +370,19 @@ class GameState {
 
     if (quizReward > 0) this.data.quizCoins += quizReward;
 
+    // 首次通关金币奖励
+    let goldReward = 0;
+    if (prev === 0 && stars > 0) {
+      goldReward = difficulty === 'legend' ? 60 : difficulty === 'elite' ? 30 : 10;
+      this.data.gold = (this.data.gold || 0) + goldReward;
+    }
+
     this.save();
     this.emit('coins-changed');
     this.emit('stage-changed');
     this.emit('stats-changed');
 
-    return { starsGained, quizReward, clearCount };
+    return { starsGained, quizReward, clearCount, goldReward };
   }
 
   // ===== 答题 =====
