@@ -556,3 +556,4 @@ async function arenaAttack(atk, def, useInt) {
     if (atk.hp <= 0) arenaLog(`${an} <span style="color:#ef5350">阵亡！</span> 💀`);
   }
 }
+
