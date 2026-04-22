@@ -328,35 +328,23 @@ window._claimAchievement = function(key, icon, name, rewardJson) {
 };
 
 function showClaimPopup(icon, name, rwText) {
-  // Remove any existing claim popup
   document.getElementById('ach-claim-overlay')?.remove();
-
   const overlay = document.createElement('div');
   overlay.id = 'ach-claim-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.className = 'ach-popup-overlay';
   overlay.innerHTML = `
-    <div style="background:#fff;border-radius:20px;padding:28px 24px;max-width:280px;width:86%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.3);animation:achPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both">
-      <div style="font-size:52px;margin-bottom:8px">${icon}</div>
-      <div style="font-size:11px;color:#9c27b0;font-weight:700;letter-spacing:1px;margin-bottom:4px">🏆 成就达成！</div>
-      <div style="font-size:17px;font-weight:800;margin-bottom:12px">${name}</div>
+    <div class="ach-popup-box">
+      <span class="ach-popup-icon">${icon}</span>
+      <div class="ach-popup-label">🏆 成就达成</div>
+      <div class="ach-popup-name">${name}</div>
       ${rwText ? `
-        <div style="background:linear-gradient(135deg,#fff8e1,#fffde7);border:1.5px solid #f5a623;border-radius:12px;padding:10px 16px;margin-bottom:16px">
-          <div style="font-size:11px;color:#888;margin-bottom:4px">获得奖励</div>
-          <div style="font-size:18px;font-weight:800;color:#e65100">${rwText}</div>
+        <div class="ach-popup-reward">
+          <div class="ach-popup-reward-label">获得奖励</div>
+          <div class="ach-popup-reward-value">${rwText}</div>
         </div>` : ''}
-      <button onclick="document.getElementById('ach-claim-overlay').remove()"
-        style="width:100%;padding:12px;background:linear-gradient(135deg,#7b1fa2,#ab47bc);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
-        太好了！
-      </button>
+      <button class="ach-popup-confirm" onclick="document.getElementById('ach-claim-overlay').remove()">太好了！</button>
     </div>`;
   document.body.appendChild(overlay);
-
-  if (!document.getElementById('ach-pop-style')) {
-    const st = document.createElement('style');
-    st.id = 'ach-pop-style';
-    st.textContent = `@keyframes achPop{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}`;
-    document.head.appendChild(st);
-  }
 }
 
 // ===== 检查与解锁（只标记达成，不发奖励）=====
@@ -452,115 +440,128 @@ export function renderAchievements() {
 
   const unlocked = unlockedMilestones();
   const pct = Math.round(unlocked / TOTAL_MILESTONES * 100);
+  const singleUnlocked = SINGLE.filter(a => isSingleUnlocked(a.id)).length;
+  const stagedUnlocked = STAGED.reduce((n, a) => n + Math.max(0, currentStageIndex(a.id) + 1), 0);
+  const stagedTotal    = STAGED.reduce((n, a) => n + a.stages.length, 0);
 
   container.innerHTML = `
-    <div style="padding:14px 14px 0">
-      <div style="background:linear-gradient(135deg,#1a237e,#4a148c);border-radius:14px;padding:14px 16px;color:#fff;margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-          <span style="font-size:13px;opacity:0.85">总进度</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;font-weight:700">${unlocked} / ${TOTAL_MILESTONES}</span>
-            <button onclick="window.achievementsModule?.check();window.achievementsModule?.refresh();" style="background:rgba(255,255,255,0.2);border:none;color:#fff;font-size:10px;padding:3px 8px;border-radius:8px;cursor:pointer;">🔄 检测</button>
-          </div>
+    <div class="ach-hero">
+      <button class="ach-check-btn" onclick="window.achievementsModule?.check();window.achievementsModule?.refresh();">🔄 检测</button>
+      <div class="ach-hero-title">成就殿堂</div>
+      <div class="ach-hero-sub">HALL OF ACHIEVEMENTS</div>
+      <div class="ach-progress-wrap">
+        <div class="ach-progress-row">
+          <span class="ach-progress-label">总进度</span>
+          <span class="ach-progress-count">${unlocked} / ${TOTAL_MILESTONES}</span>
         </div>
-        <div style="background:rgba(255,255,255,0.2);border-radius:6px;height:8px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:#fff;border-radius:6px;transition:width 0.6s"></div>
+        <div class="ach-progress-track">
+          <div class="ach-progress-fill" style="width:${pct}%"></div>
         </div>
-        <div style="font-size:11px;opacity:0.7;margin-top:6px">${pct}% 完成</div>
+        <div class="ach-progress-pct">${pct}% 已完成</div>
       </div>
     </div>
 
-    <div style="padding:0 14px 10px">
-      <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:8px;letter-spacing:1px">▸ 单阶成就（${SINGLE.filter(a=>isSingleUnlocked(a.id)).length}/${SINGLE.length}）</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        ${SINGLE.map(a => renderSingleCard(a)).join('')}
-      </div>
+    <div class="ach-section-header">
+      <div class="ach-section-line"></div>
+      <span class="ach-section-title">单阶成就</span>
+      <span class="ach-section-count">${singleUnlocked}/${SINGLE.length}</span>
+      <div class="ach-section-line" style="background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15))"></div>
+    </div>
+    <div class="ach-single-grid">
+      ${SINGLE.map(a => renderSingleCard(a)).join('')}
     </div>
 
-    <div style="padding:0 14px 24px">
-      <div style="font-size:11px;font-weight:700;color:#888;margin-bottom:8px;letter-spacing:1px">▸ 阶梯成就（${STAGED.reduce((n,a)=>n+Math.max(0,currentStageIndex(a.id)+1),0)}/${STAGED.reduce((n,a)=>n+a.stages.length,0)}）</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${STAGED.map(a => renderStagedCard(a)).join('')}
-      </div>
+    <div class="ach-section-header">
+      <div class="ach-section-line"></div>
+      <span class="ach-section-title">阶梯成就</span>
+      <span class="ach-section-count">${stagedUnlocked}/${stagedTotal}</span>
+      <div class="ach-section-line" style="background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15))"></div>
+    </div>
+    <div class="ach-staged-list">
+      ${STAGED.map(a => renderStagedCard(a)).join('')}
     </div>
   `;
 }
 
-const STAGE_COLORS = ['#cd7f32','#9e9e9e','#f5a623'];
-const STAGE_BGS    = ['#fff3e0','#f5f5f5','#fff8e1'];
+const STAGE_MEDAL = ['bronze', 'silver', 'gold'];
 
 function renderSingleCard(ach) {
-  const unlocked = isSingleUnlocked(ach.id);
-  const claimed  = isSingleClaimed(ach.id);
+  const unlocked  = isSingleUnlocked(ach.id);
+  const claimed   = isSingleClaimed(ach.id);
   const claimable = unlocked && !claimed;
   const rw = rewardText(ach.reward);
   const rewardJson = JSON.stringify(ach.reward).replace(/"/g, '&quot;');
   const nameEsc = ach.name.replace(/'/g, "\\'");
   const iconEsc = ach.icon.replace(/'/g, "\\'");
 
+  const stateClass = claimable ? 'ach-card--claimable' : claimed ? 'ach-card--claimed' : 'ach-card--locked';
+  const onclick = claimable ? `window._claimAchievement('${ach.id}','${iconEsc}','${nameEsc}','${rewardJson}')` : '';
+
   return `
-    <div onclick="${claimable ? `window._claimAchievement('${ach.id}','${iconEsc}','${nameEsc}','${rewardJson}')` : ''}"
-      style="background:${claimable?'#f9fbe7':unlocked?'#f3e5f5':'#f5f5f5'};border:2px solid ${claimable?'#aed581':unlocked?'#ab47bc':'transparent'};border-radius:12px;padding:10px;position:relative;cursor:${claimable?'pointer':'default'};${!unlocked?'filter:saturate(0.25) opacity(0.55)':''}${claimable?';box-shadow:0 2px 8px rgba(174,213,129,0.4)':''}">
-      ${claimed ? `<div style="position:absolute;top:6px;right:7px;font-size:10px;color:#ab47bc;font-weight:700">✓</div>` : ''}
-      ${claimable ? `<div style="position:absolute;top:5px;right:6px;background:#f44336;width:8px;height:8px;border-radius:50%"></div>` : ''}
-      <div style="font-size:26px;margin-bottom:5px">${ach.icon}</div>
-      <div style="font-size:12px;font-weight:700;line-height:1.3">${ach.name}</div>
-      <div style="font-size:10px;color:#888;margin-top:3px;line-height:1.4">${ach.desc}</div>
-      ${rw ? `<div style="font-size:10px;color:${claimed?'#7b1fa2':claimable?'#558b2f':'#aaa'};margin-top:5px;font-weight:600">${rw}</div>` : ''}
-      ${claimable ? `<div style="margin-top:7px;background:#7cb342;color:#fff;font-size:10px;font-weight:700;padding:3px 0;border-radius:6px;text-align:center">点击领取</div>` : ''}
+    <div class="ach-card ${stateClass}" onclick="${onclick}">
+      ${claimed   ? `<div class="ach-claimed-badge">✓</div>` : ''}
+      ${claimable ? `<div class="ach-dot"></div>` : ''}
+      <span class="ach-card-icon">${ach.icon}</span>
+      <div class="ach-card-name">${ach.name}</div>
+      <div class="ach-card-desc">${ach.desc}</div>
+      ${rw ? `<div class="ach-card-reward">${rw}</div>` : ''}
+      ${claimable ? `<div class="ach-claim-btn">点击领取</div>` : ''}
     </div>`;
 }
 
 function renderStagedCard(ach) {
   const cur = currentStageIndex(ach.id);
   const val = (() => { try { return ach.stat(gameState.data); } catch(e) { return 0; } })();
-  const nextIdx = cur + 1;
-  const hasNext = nextIdx < ach.stages.length;
+  const nextIdx   = cur + 1;
+  const hasNext   = nextIdx < ach.stages.length;
   const nextStage = hasNext ? ach.stages[nextIdx] : null;
   const pct = hasNext ? Math.min(100, Math.round(val / nextStage.threshold * 100)) : 100;
-
-  // Check if any stage is claimable
   const anyClaimable = cur >= 0 && ach.stages.slice(0, cur + 1).some((_, i) => !isStageClaimed(ach.id, i));
+  const medal = STAGE_MEDAL[Math.min(cur, 2)] || 'gold';
+
+  const chips = ach.stages.map((stage, i) => {
+    const done           = i <= cur;
+    const stageClaimed   = isStageClaimed(ach.id, i);
+    const stageClaimable = done && !stageClaimed;
+    const rw  = rewardText(stage.reward);
+    const key = `${ach.id}_${i}`;
+    const nameEsc = (`${ach.name} ${stage.label}`).replace(/'/g, "\\'");
+    const iconEsc = ach.icon.replace(/'/g, "\\'");
+    const rewardJson = JSON.stringify(stage.reward).replace(/"/g, '&quot;');
+    const chipMedal  = STAGE_MEDAL[i];
+    const chipState  = stageClaimable ? 'ach-stage-chip--claimable' : stageClaimed ? 'ach-stage-chip--claimed' : 'ach-stage-chip--locked';
+    const onclick    = stageClaimable ? `window._claimAchievement('${key}','${iconEsc}','${nameEsc}','${rewardJson}')` : '';
+
+    return `
+      <div class="ach-stage-chip ${chipState} ${chipMedal}" onclick="${onclick}">
+        ${stageClaimable ? `<div class="ach-stage-dot"></div>` : ''}
+        ${stageClaimed   ? `<span class="ach-stage-check">✓</span>` : ''}
+        <div class="ach-stage-chip-label">${stage.label}</div>
+        <div class="ach-stage-chip-threshold">${stage.threshold.toLocaleString()}</div>
+        ${rw ? `<div class="ach-stage-chip-reward">${rw}</div>` : ''}
+        ${stageClaimable ? `<div class="ach-stage-chip-claim">领取</div>` : ''}
+      </div>`;
+  }).join('');
 
   return `
-    <div style="background:#fafafa;border:1.5px solid ${anyClaimable?'#aed581':'#e0e0e0'};border-radius:14px;padding:12px;${cur<0?'filter:saturate(0.3) opacity(0.6)':''}${anyClaimable?';box-shadow:0 2px 8px rgba(174,213,129,0.35)':''}">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <span style="font-size:28px">${ach.icon}</span>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">${ach.name}</div>
-          <div style="font-size:10px;color:#888;margin-top:1px">${cur>=0?ach.stages[cur].label:'未解锁'}</div>
+    <div class="ach-staged-card ${anyClaimable ? 'ach-staged-card--has-claimable' : ''}">
+      <div class="ach-staged-head">
+        <span class="ach-staged-icon">${ach.icon}</span>
+        <div class="ach-staged-info">
+          <div class="ach-staged-name">${ach.name}</div>
+          <div class="ach-staged-current">${cur >= 0 ? ach.stages[cur].label : '未解锁'}</div>
         </div>
-        <div style="font-size:12px;font-weight:700;color:#555">${val.toLocaleString()} ${ach.statLabel}</div>
+        <div class="ach-staged-val">${val.toLocaleString()} ${ach.statLabel}</div>
       </div>
-      <div style="display:flex;gap:5px;margin-bottom:8px">
-        ${ach.stages.map((stage, i) => {
-          const done = i <= cur;
-          const stageClaimed = isStageClaimed(ach.id, i);
-          const stageClaimable = done && !stageClaimed;
-          const rw = rewardText(stage.reward);
-          const rewardJson = JSON.stringify(stage.reward).replace(/"/g, '&quot;');
-          const key = `${ach.id}_${i}`;
-          const nameEsc = (`${ach.name} ${stage.label}`).replace(/'/g, "\\'");
-          const iconEsc = ach.icon.replace(/'/g, "\\'");
-          return `<div onclick="${stageClaimable ? `window._claimAchievement('${key}','${iconEsc}','${nameEsc}','${rewardJson}')` : ''}"
-            style="flex:1;background:${stageClaimable?'#f9fbe7':done?STAGE_BGS[i]:'#f0f0f0'};border:1.5px solid ${stageClaimable?'#aed581':done?STAGE_COLORS[i]:'#ddd'};border-radius:8px;padding:6px 4px;text-align:center;cursor:${stageClaimable?'pointer':'default'};position:relative">
-            ${stageClaimed ? `<div style="font-size:9px;color:${STAGE_COLORS[i]};font-weight:700;margin-bottom:1px">✓</div>` : ''}
-            ${stageClaimable ? `<div style="position:absolute;top:3px;right:3px;background:#f44336;width:6px;height:6px;border-radius:50%"></div>` : ''}
-            <div style="font-size:10px;font-weight:600;color:${done?'#333':'#aaa'};line-height:1.3">${stage.label}</div>
-            <div style="font-size:9px;color:${done?'#666':'#bbb'};margin-top:2px">${stage.threshold.toLocaleString()}</div>
-            ${rw ? `<div style="font-size:9px;color:${stageClaimed?STAGE_COLORS[i]:stageClaimable?'#558b2f':'#ccc'};margin-top:2px;font-weight:600">${rw}</div>` : ''}
-            ${stageClaimable ? `<div style="margin-top:4px;background:#7cb342;color:#fff;font-size:8px;font-weight:700;padding:2px 0;border-radius:4px">领取</div>` : ''}
-          </div>`;
-        }).join('')}
-      </div>
+      <div class="ach-stages-row">${chips}</div>
       ${hasNext
-        ? `<div style="display:flex;align-items:center;gap:6px">
-            <div style="flex:1;background:#e0e0e0;border-radius:4px;height:5px;overflow:hidden">
-              <div style="height:100%;width:${pct}%;background:${STAGE_COLORS[nextIdx]||'#9c27b0'};border-radius:4px;transition:width 0.5s"></div>
+        ? `<div class="ach-bar-row">
+            <div class="ach-bar-track">
+              <div class="ach-bar-fill ${STAGE_MEDAL[nextIdx] || 'gold'}" style="width:${pct}%"></div>
             </div>
-            <div style="font-size:10px;color:#888;white-space:nowrap">${val.toLocaleString()} / ${nextStage.threshold.toLocaleString()}</div>
+            <div class="ach-bar-text">${val.toLocaleString()} / ${nextStage.threshold.toLocaleString()}</div>
           </div>`
-        : `<div style="font-size:11px;color:#f5a623;font-weight:700;text-align:center">🏆 全部达成！</div>`
+        : `<div class="ach-bar-complete">🏆 全部达成！</div>`
       }
     </div>`;
 }

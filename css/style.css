@@ -2997,3 +2997,661 @@ body {
     grid-template-columns: repeat(8, 1fr);
   }
 }
+
+/* ===== 成就殿堂 · 青春竞技风 ===== */
+
+/* 容器背景：深空渐变 */
+#achievements-container {
+  background: linear-gradient(180deg, #0d0d1f 0%, #130d2a 60%, #0d1520 100%);
+  min-height: 100%;
+  color: #fff;
+  padding-bottom: 32px;
+}
+
+/* 顶部英雄Banner */
+.ach-hero {
+  position: relative;
+  padding: 24px 16px 20px;
+  background: linear-gradient(135deg, #1a0a3e 0%, #0d1a3e 50%, #0a2040 100%);
+  overflow: hidden;
+}
+
+.ach-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 60% at 20% 50%, rgba(139,92,246,0.25) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 80% 30%, rgba(255,184,0,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ach-hero-title {
+  font-family: var(--font-title);
+  font-size: 26px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #FFD700, #FFB800, #FF8C00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+  letter-spacing: 2px;
+  text-shadow: none;
+  margin-bottom: 2px;
+}
+
+.ach-hero-sub {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 16px;
+}
+
+/* 进度条区域 */
+.ach-progress-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.ach-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ach-progress-label {
+  font-size: 12px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 600;
+}
+
+.ach-progress-count {
+  font-size: 13px;
+  font-weight: 800;
+  color: #FFD700;
+}
+
+.ach-progress-track {
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.ach-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #8B5CF6, #FFB800, #FF6B35);
+  background-size: 200% 100%;
+  animation: achProgressShine 3s linear infinite;
+  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+}
+
+.ach-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: -2px; bottom: -2px;
+  width: 12px;
+  background: radial-gradient(circle, rgba(255,255,255,0.9), transparent);
+  border-radius: 50%;
+}
+
+@keyframes achProgressShine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ach-progress-pct {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  text-align: right;
+}
+
+.ach-check-btn {
+  position: absolute;
+  top: 24px; right: 16px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+  font-size: 10px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.2s;
+  z-index: 2;
+}
+
+.ach-check-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.15); }
+
+/* 分区标题 */
+.ach-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px 10px;
+}
+
+.ach-section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent);
+}
+
+.ach-section-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ach-section-count {
+  font-size: 10px;
+  color: rgba(255,184,0,0.7);
+  font-weight: 700;
+}
+
+/* 单阶成就网格 */
+.ach-single-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+/* 成就卡片基础 */
+.ach-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 14px 12px;
+  cursor: default;
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+}
+
+.ach-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* 锁定状态 */
+.ach-card--locked {
+  background: rgba(255,255,255,0.03);
+}
+
+.ach-card--locked .ach-card-icon,
+.ach-card--locked .ach-card-name,
+.ach-card--locked .ach-card-desc,
+.ach-card--locked .ach-card-reward {
+  opacity: 0.3;
+  filter: grayscale(1);
+}
+
+/* 已领取状态 */
+.ach-card--claimed {
+  background: rgba(16,185,129,0.08);
+}
+
+.ach-card--claimed::before {
+  background: linear-gradient(135deg, rgba(16,185,129,0.3), rgba(16,185,129,0.05));
+}
+
+/* 可领取状态 */
+.ach-card--claimable {
+  background: rgba(255,184,0,0.07);
+  cursor: pointer;
+  animation: achCardPulse 2.5s ease-in-out infinite;
+}
+
+.ach-card--claimable::before {
+  background: linear-gradient(135deg, rgba(255,184,0,0.5), rgba(255,107,53,0.2));
+}
+
+.ach-card--claimable:active { transform: scale(0.96); }
+
+@keyframes achCardPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,184,0,0); }
+  50% { box-shadow: 0 0 0 4px rgba(255,184,0,0.15); }
+}
+
+/* 成就卡片内容 */
+.ach-card-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  display: block;
+  line-height: 1;
+}
+
+.ach-card-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.3;
+  margin-bottom: 3px;
+}
+
+.ach-card-desc {
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+  line-height: 1.5;
+  margin-bottom: 5px;
+}
+
+.ach-card-reward {
+  font-size: 10px;
+  font-weight: 700;
+  color: #FFB800;
+}
+
+/* 已领取徽章 */
+.ach-claimed-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 20px; height: 20px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16,185,129,0.4);
+}
+
+/* 可领取红点 */
+.ach-dot {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 8px; height: 8px;
+  background: #FF4444;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  box-shadow: 0 0 6px rgba(255,68,68,0.8);
+  animation: achDotBlink 1.5s ease-in-out infinite;
+}
+
+@keyframes achDotBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.85); }
+}
+
+/* 领取按钮 */
+.ach-claim-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 0;
+  background: linear-gradient(135deg, #FFB800, #FF8C00);
+  color: #1a0a00;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  border-radius: 8px;
+  letter-spacing: 1px;
+  box-shadow: 0 3px 12px rgba(255,140,0,0.4);
+  animation: achBtnShine 2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.ach-claim-btn::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -80%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+  animation: achBtnSweep 2s ease-in-out infinite;
+}
+
+@keyframes achBtnSweep {
+  0% { left: -80%; }
+  60%, 100% { left: 140%; }
+}
+
+/* 阶梯成就列表 */
+.ach-staged-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+/* 阶梯成就卡片 */
+.ach-staged-card {
+  background: rgba(255,255,255,0.04);
+  border-radius: 18px;
+  padding: 14px;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.3s;
+}
+
+.ach-staged-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.02));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.ach-staged-card--has-claimable {
+  box-shadow: 0 0 0 1px rgba(255,184,0,0.3), 0 4px 20px rgba(255,184,0,0.1);
+}
+
+.ach-staged-card--has-claimable::before {
+  background: linear-gradient(135deg, rgba(255,184,0,0.4), rgba(255,107,53,0.1));
+}
+
+/* 阶梯卡头部 */
+.ach-staged-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.ach-staged-icon {
+  font-size: 30px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(255,184,0,0.3));
+}
+
+.ach-staged-info { flex: 1; }
+
+.ach-staged-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.ach-staged-current {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+}
+
+.ach-staged-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 阶段chips */
+.ach-stages-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ach-stage-chip {
+  flex: 1;
+  border-radius: 10px;
+  padding: 7px 4px 6px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.15s;
+}
+
+.ach-stage-chip--locked {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.ach-stage-chip--claimed {
+  border: 1px solid transparent;
+}
+
+.ach-stage-chip--claimed.bronze { background: rgba(205,127,50,0.15); border-color: rgba(205,127,50,0.4); }
+.ach-stage-chip--claimed.silver { background: rgba(160,160,160,0.15); border-color: rgba(160,160,160,0.4); }
+.ach-stage-chip--claimed.gold   { background: rgba(245,166,35,0.15); border-color: rgba(245,166,35,0.4); }
+
+.ach-stage-chip--claimable {
+  cursor: pointer;
+  animation: achChipPulse 2s ease-in-out infinite;
+}
+
+.ach-stage-chip--claimable.bronze { background: rgba(205,127,50,0.2); border: 1px solid #CD7F32; box-shadow: 0 0 10px rgba(205,127,50,0.3); }
+.ach-stage-chip--claimable.silver { background: rgba(160,160,160,0.2); border: 1px solid #A0A0A0; box-shadow: 0 0 10px rgba(160,160,160,0.3); }
+.ach-stage-chip--claimable.gold   { background: rgba(245,166,35,0.25); border: 1px solid #F5A623; box-shadow: 0 0 10px rgba(245,166,35,0.4); }
+
+.ach-stage-chip--claimable:active { transform: scale(0.94); }
+
+@keyframes achChipPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+}
+
+.ach-stage-chip-label {
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: rgba(255,255,255,0.5);
+}
+
+.ach-stage-chip--claimed .ach-stage-chip-label,
+.ach-stage-chip--claimable .ach-stage-chip-label { color: rgba(255,255,255,0.85); }
+
+.ach-stage-chip-threshold {
+  font-size: 8px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 2px;
+}
+
+.ach-stage-chip--claimed .ach-stage-chip-threshold,
+.ach-stage-chip--claimable .ach-stage-chip-threshold { color: rgba(255,255,255,0.5); }
+
+.ach-stage-chip-reward {
+  font-size: 8px;
+  font-weight: 700;
+  margin-top: 2px;
+  color: rgba(255,255,255,0.3);
+}
+
+.ach-stage-chip--claimed .ach-stage-chip-reward { color: #FFB800; }
+.ach-stage-chip--claimable .ach-stage-chip-reward { color: #FFD700; }
+
+.ach-stage-chip-claim {
+  margin-top: 4px;
+  font-size: 8px;
+  font-weight: 800;
+  color: #1a0a00;
+  background: linear-gradient(135deg, #FFB800, #FF8C00);
+  border-radius: 4px;
+  padding: 2px 4px;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ach-stage-check {
+  display: inline-block;
+  margin-bottom: 2px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.ach-stage-dot {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 5px; height: 5px;
+  background: #FF4444;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255,68,68,0.9);
+}
+
+/* 阶梯进度条 */
+.ach-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ach-bar-track {
+  flex: 1;
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ach-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+}
+
+.ach-bar-fill.bronze { background: linear-gradient(90deg, #8B5A2B, #CD7F32); }
+.ach-bar-fill.silver { background: linear-gradient(90deg, #707070, #C0C0C0); }
+.ach-bar-fill.gold   { background: linear-gradient(90deg, #B8860B, #FFD700); box-shadow: 0 0 6px rgba(255,215,0,0.4); }
+
+.ach-bar-fill::after {
+  content: '';
+  position: absolute;
+  right: -1px; top: -1px; bottom: -1px;
+  width: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.7);
+  box-shadow: 0 0 4px rgba(255,255,255,0.5);
+}
+
+.ach-bar-text {
+  font-size: 9px;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.ach-bar-complete {
+  font-size: 10px;
+  font-weight: 800;
+  color: #FFD700;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+/* 弹窗：成就领取 */
+.ach-popup-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.ach-popup-box {
+  background: linear-gradient(160deg, #1a0a3e, #0d1a3e);
+  border: 1px solid rgba(255,184,0,0.3);
+  border-radius: 24px;
+  padding: 32px 24px;
+  max-width: 300px;
+  width: 88%;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+  animation: achPopIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  position: relative;
+  overflow: hidden;
+}
+
+.ach-popup-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(139,92,246,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+@keyframes achPopIn {
+  from { opacity: 0; transform: scale(0.6) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ach-popup-icon { font-size: 60px; margin-bottom: 10px; display: block; filter: drop-shadow(0 4px 12px rgba(255,184,0,0.4)); }
+
+.ach-popup-label {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(255,184,0,0.8);
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.ach-popup-name {
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 16px;
+  line-height: 1.3;
+}
+
+.ach-popup-reward {
+  background: rgba(255,184,0,0.1);
+  border: 1px solid rgba(255,184,0,0.25);
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+.ach-popup-reward-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+
+.ach-popup-reward-value {
+  font-size: 22px;
+  font-weight: 900;
+  color: #FFD700;
+  text-shadow: 0 2px 8px rgba(255,215,0,0.4);
+}
+
+.ach-popup-confirm {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: var(--font-body);
+  letter-spacing: 1px;
+  box-shadow: 0 4px 16px rgba(139,92,246,0.5);
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  z-index: 1;
+}
+
+.ach-popup-confirm:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(139,92,246,0.4);
+}
