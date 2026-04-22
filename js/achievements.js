@@ -204,9 +204,9 @@ export const ACHIEVEMENTS = [
     stat: s => s.monopolyScore || 0,
     statLabel: '单局最高积分',
     stages: [
-      { label: '🥉 崭露头角', threshold: 1000,  reward: { gold: 50 } },
-      { label: '🥈 名震一方', threshold: 3000, reward: { gold: 150 } },
-      { label: '🥇 天下第一', threshold: 5000, reward: { gold: 400 } },
+      { label: '🥉 崭露头角', threshold: 50,  reward: { gold: 50 } },
+      { label: '🥈 名震一方', threshold: 120, reward: { gold: 150 } },
+      { label: '🥇 天下第一', threshold: 200, reward: { gold: 400 } },
     ],
   },
   {
