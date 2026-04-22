@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v40
+// 三国志探险 - 三国大富翁（三方势力版）v41
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -344,7 +344,7 @@ function settle() {
     <p style="font-size:22px;font-weight:700;color:#f5a623">+${earned} 金币</p>
     ${scoreLine}
     <p style="font-size:11px;color:#999;margin:4px 0 12px">城池 ${P.cities.length} 座 · 第${round}回合</p>
-    <button class="btn btn-primary" style="width:100%" onclick="window._mc()">开始新局</button>`);
+    <button class="btn btn-primary" style="width:100%" onclick="window._mc()">返回首页</button>`);
   window._mc = () => { closePopup(); active = false; showStartScreen(); };
 }
 
@@ -2111,7 +2111,7 @@ function endGame(forcedWinner, timeupWinner) {
         </div>`}
     <button class="btn btn-primary" style="width:100%" onclick="window._mc()">返回</button>`);
 
-  window._mc = ()=>{ closePopup(); startGame(); };
+  window._mc = ()=>{ closePopup(); active = false; showStartScreen(); };
 
   if (pWin) {
     for(let i=0;i<25;i++){
