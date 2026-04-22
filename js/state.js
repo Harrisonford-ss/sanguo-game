@@ -1,4 +1,4 @@
-// v45
+// v49
 // 三国志探险 - 游戏状态管理
 import { characters } from '../data/characters.js';
 // 双货币系统：答题积分(quizCoins) + 抽卡积分(gachaCoins)
@@ -26,6 +26,8 @@ const defaultState = {
   gachaCoins: 30,     // 抽卡积分（答题获得，用于抽卡）
   gold: 0,            // 金币（大富翁获得，用于升级武将）
   profileAvatar: 'liubei', // 玩家选择的头像武将ID
+  signDay: 0,           // 当前签到第几天（1~7，0=未开始）
+  lastSignDate: '',     // 上次签到日期 'YYYY-MM-DD'
   stamina: 10,             // 当前体力
   staminaLastRegen: 0,     // 上次恢复时间戳(ms)
 
@@ -515,6 +517,28 @@ class GameState {
 
   get unlockedAchievementCount() {
     return Object.keys(this.data.achievementsUnlocked || {}).length;
+  }
+
+  // ===== 每日签到 =====
+  todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  get signDay()      { return this.data.signDay      || 0; }
+  get lastSignDate() { return this.data.lastSignDate  || ''; }
+
+  canSignToday() {
+    return this.lastSignDate !== this.todayStr();
+  }
+
+  doSign() {
+    if (!this.canSignToday()) return null;
+    const nextDay = (this.signDay % 7) + 1;
+    this.data.signDay      = nextDay;
+    this.data.lastSignDate = this.todayStr();
+    this.save();
+    return nextDay; // 返回本次签到是第几天
   }
 
   // ===== 事件系统 =====

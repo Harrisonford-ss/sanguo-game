@@ -13,6 +13,7 @@ import { initLeaderboard } from './leaderboard.js';
 import { initDungeon } from './dungeon.js';
 import { initAchievements, checkAchievements, renderAchievements } from './achievements.js';
 import { initStamina } from './stamina.js';
+import { initSignin, checkRedDot } from './signin.js';
 
 // 检测微信浏览器，添加 class 供 CSS 处理底部安全区
 if (/MicroMessenger/i.test(navigator.userAgent)) {
@@ -44,6 +45,7 @@ class App {
     safeInit('dungeon', initDungeon);
     safeInit('achievements', initAchievements);
     safeInit('stamina', initStamina);
+    safeInit('signin', initSignin);
 
     // 首页英雄轮播
     this.startHeroSlideshow();
