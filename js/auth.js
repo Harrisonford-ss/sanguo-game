@@ -6,7 +6,7 @@ import { avatarHTML } from './avatars.js';
 import { getCharacter, characters } from '../data/characters.js';
 
 export function initAuth() {
-  window.authModule = { showAuthUI, showUserMenu, syncToCloud, syncFromCloud, updateAuthDisplay };
+  window.authModule = { showAuthUI, showUserMenu, syncToCloud, syncFromCloud, updateAuthDisplay, calcPower };
   updateAuthDisplay();
   console.log('[auth] initAuth, isLoggedIn=', isLoggedIn());
   // 页面加载时如果已登录，自动从云端恢复最新存档，再重新渲染当前页面

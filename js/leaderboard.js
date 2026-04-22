@@ -282,7 +282,7 @@ async function renderArena(el) {
     window.lbModule._arenaConfirm = async () => {
       if (arenaSelected.filter(Boolean).length < 3) return;
       const team = arenaSelected.map(id => ({ charId: id, level: gameState.getCardLevel(id) }));
-      const totalPower = team.reduce((s, t) => s + (t.level * 100 + 50), 0);
+      const totalPower = window.authModule?.calcPower?.() ?? team.reduce((s, t) => s + (t.level * 100 + 50), 0);
       document.getElementById('arena-picker')?.remove();
       await setArenaTeam(team, totalPower);
       refresh();

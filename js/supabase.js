@@ -216,16 +216,7 @@ export async function setArenaTeam(team, power) {
     power: power,
     updated_at: new Date().toISOString()
   });
-  // 同时同步排行榜
-  await upsert('sanguo_leaderboard', {
-    user_id: currentUser.id,
-    nickname: currentUser.nickname,
-    avatar: currentUser.avatar || 'liubei',
-    power: power,
-    card_count: team.length,
-    win_count: 0,
-    updated_at: new Date().toISOString()
-  });
+  // 排行榜由 syncToCloud 统一写入，这里不再单独覆盖
 }
 
 export async function getMyArenaTeam() {
