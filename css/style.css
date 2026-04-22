@@ -3678,7 +3678,7 @@ body {
   align-items: flex-end;
   overflow: hidden;
   flex-shrink: 0;
-  background: url('../images/cardart/lvbu.webp') center 15% / cover no-repeat;
+  background: url('../images/cardart/lvbu.webp') center top / auto 340px no-repeat;
 }
 
 .gw-banner::after {
