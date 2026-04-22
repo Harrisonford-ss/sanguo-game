@@ -141,8 +141,6 @@ export async function saveGameToCloud(gameData, power) {
     power: power,
     card_count: Object.keys(gameData.ownedCards || {}).length,
     win_count: gameData.battleWins || 0,
-    monopoly_score: gameData.monopolyScore || 0,
-    monopoly_wins: gameData.monopolyWins || 0,
     updated_at: new Date().toISOString()
   });
 }
@@ -176,11 +174,35 @@ export async function getFloorLeaderboard(limit = 30) {
     .slice(0, limit);
 }
 
+let _monopolyLbCache = null;
+let _monopolyLbTime  = 0;
 export async function getMonopolyLeaderboard(limit = 30) {
-  const rows = await query('sanguo_leaderboard',
-    `select=user_id,nickname,avatar,card_count,win_count,monopoly_score,monopoly_wins&monopoly_score=gt.0&order=monopoly_score.desc&limit=${limit}`
-  );
-  return rows;
+  // 60秒内复用缓存，避免重复请求失败导致空列表
+  if (_monopolyLbCache && Date.now() - _monopolyLbTime < 60000) return _monopolyLbCache;
+  try {
+    const [saves, lb] = await Promise.all([
+      query('sanguo_saves', `select=user_id,game_data&order=updated_at.desc&limit=500`),
+      query('sanguo_leaderboard', `select=user_id,nickname,avatar&limit=500`)
+    ]);
+    const lbMap = Object.fromEntries(lb.map(r => [r.user_id, r]));
+    const seen = new Set();
+    const rows = [];
+    for (const s of saves) {
+      if (seen.has(s.user_id)) continue;
+      seen.add(s.user_id);
+      const score = s.game_data?.monopolyScore || 0;
+      if (score <= 0) continue;
+      const info = lbMap[s.user_id] || {};
+      rows.push({ user_id: s.user_id, monopoly_score: score, monopoly_wins: s.game_data?.monopolyWins || 0, ...info });
+    }
+    const result = rows.sort((a, b) => b.monopoly_score - a.monopoly_score).slice(0, limit);
+    _monopolyLbCache = result;
+    _monopolyLbTime  = Date.now();
+    return result;
+  } catch (e) {
+    console.error('[monopoly lb]', e);
+    return _monopolyLbCache || [];
+  }
 }
 
 // ===== 擂台 =====
