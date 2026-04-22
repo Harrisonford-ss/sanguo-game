@@ -1,4 +1,4 @@
-// 三国志探险 - 三国大富翁（三方势力版）v41
+// 三国志探险 - 三国大富翁（三方势力版）v42
 // 刘备(玩家) vs 曹操(AI) vs 孙权(AI)，占城需答3题中2题且花费金币
 
 import { gameState } from './state.js';
@@ -1161,8 +1161,14 @@ async function doEmpty(who, tile) {
       p.coins -= cost;
       ownership[tile.id]=who; p.cities.push(tile.id);
       p.troops = Math.min(MAX_TROOPS, p.troops + 2);
+      // 占城后自动驻入部分兵力
+      if (p.troops > 0) {
+        const send = Math.min(MAX_GARRISON, Math.ceil(p.troops * (0.3 + Math.random() * 0.3)));
+        garrison[tile.id] = send;
+        p.troops = Math.max(0, p.troops - send);
+      }
       const label = who==='ai'?'曹操':'孙权';
-      log(`🐴 ${label}占领${tile.name}(-${cost}💰)!`);
+      log(`🐴 ${label}占领${tile.name}(-${cost}💰，驻兵${garrison[tile.id]||0})!`);
     } else {
       const label = who==='ai'?'曹操':'孙权';
       log(`🐴 ${label}攻城失败(${correct}/3题)`);
@@ -1645,7 +1651,13 @@ async function doAttack(who, tile) {
     def.cities = def.cities.filter(c=>c!==tile.id);
     ownership[tile.id] = who;
     atk.cities.push(tile.id);
-    garrison[tile.id] = 0; // 攻下城池后驻兵清零（已在兵力互损中处理，确保清空）
+    garrison[tile.id] = 0;
+    // AI攻下城池后自动驻入部分兵力
+    if (who !== 'player' && atk.troops > 0) {
+      const send = Math.min(MAX_GARRISON, Math.ceil(atk.troops * (0.2 + Math.random() * 0.3)));
+      garrison[tile.id] = send;
+      atk.troops = Math.max(0, atk.troops - send);
+    }
     if (tactic !== 'raid') {
       const bonusAdv = atk.advisors.filter(a=>a.effect==='cityBonus+5').length;
       if (bonusAdv > 0) atk.coins += bonusAdv * 5;
