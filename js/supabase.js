@@ -177,12 +177,12 @@ export async function getFloorLeaderboard(limit = 30) {
 let _monopolyLbCache = null;
 let _monopolyLbTime  = 0;
 export async function getMonopolyLeaderboard(limit = 30) {
-  if (_monopolyLbCache && Date.now() - _monopolyLbTime < 60000) return _monopolyLbCache;
+  if (_monopolyLbCache && Date.now() - _monopolyLbTime < 300000) return _monopolyLbCache;
   try {
     // 只取有大富翁积分的存档（game_data->monopolyScore 不为 null 且 > 0）
     // 分两批并行：存档只选 user_id + game_data 的两个子字段，减少传输量
     const [saves, lb] = await Promise.all([
-      query('sanguo_saves', `select=user_id,game_data->>monopolyScore,game_data->>monopolyWins&game_data->>monopolyScore=gt.0&order=updated_at.desc&limit=200`),
+      query('sanguo_saves', `select=user_id,game_data->>monopolyScore,game_data->>monopolyWins&order=updated_at.desc&limit=500`),
       query('sanguo_leaderboard', `select=user_id,nickname,avatar&limit=500`)
     ]);
     const lbMap = Object.fromEntries(lb.map(r => [r.user_id, r]));
