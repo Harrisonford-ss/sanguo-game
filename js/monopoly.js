@@ -153,8 +153,15 @@ let cityLevels = {};
 let disasterCities = {};
 let movingPiece = null; // 'player'|'ai'|'ai2'|null，移动中的棋子
 
+function canEnter() {
+  // 如果已有进行中的存档，可以直接进入
+  if (loadSave()) return true;
+  return gameState.gold >= 30;
+}
+
 export function initMonopoly() {
-  window.monopolyModule = { refresh, startGame, rollDice, settle, leaveGame };
+  window.monopolyModule = { refresh, startGame, rollDice, settle, leaveGame, canEnter };
+
   refresh();
 }
 

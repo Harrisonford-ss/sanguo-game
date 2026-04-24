@@ -103,7 +103,10 @@
           <div class="entry-bg" style="background-image:url('images/entries/entry_dungeon.webp')"></div>
           <div class="entry-info"><span class="entry-icon">🗺️</span><span class="entry-title">探险</span></div>
         </button>
-        <button class="entry-card" onclick="window.app.navigate('monopoly')">
+        <button class="entry-card" onclick="
+          if(!window.monopolyModule?.canEnter()) {
+            alert('💰 金币不足 30，无法开局\n\n通过答题、探险、关卡首通可获得金币');
+          } else { window.app.navigate('monopoly'); }">
           <div class="entry-bg" style="background-image:url('images/entries/entry_monopoly.webp')"></div>
           <div class="entry-info"><span class="entry-icon">🎲</span><span class="entry-title">大富翁</span></div>
         </button>
