@@ -263,7 +263,8 @@ async function syncFromCloud() {
   // 云端比本地更新（换设备场景）才覆盖，否则保留本地存档
   if (cloudTs <= localTs) return;
 
-  const merged = { ...data };
+  // defaultState 兜底，防止旧云端存档缺字段（如 signDay/lastSignDate）
+  const merged = { ...gameState.data, ...data };
   // 确保初始赠送的3张卡不会丢失
   merged.ownedCards = { ...data.ownedCards };
   if (!merged.ownedCards.liubei) merged.ownedCards.liubei = { level: 1 };
